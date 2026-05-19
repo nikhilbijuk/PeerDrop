@@ -626,6 +626,21 @@ async function flushIceCandidates() {
 const ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  {
+    urls: "turn:openrelay.metered.ca:80",
+    username: "openrelayproject",
+    credential: "openrelayproject"
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443",
+    username: "openrelayproject",
+    credential: "openrelayproject"
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+    username: "openrelayproject",
+    credential: "openrelayproject"
+  }
 ];
 
 async function initPeerConnection() {
@@ -645,10 +660,12 @@ async function initPeerConnection() {
       closeModal("modal-join");
       showRoom();
       toast("🎉 Connected! Start sharing.");
-    }
-    if (s === "disconnected" || s === "failed") {
-      STATE.connected = false;
-      setStatus("DISCONNECTED");
+    } else if (s === "failed" || s === "disconnected") {
+      log(`Connection ${s}`, "error");
+      toast(`Connection ${s}`);
+      const btn = document.getElementById("join-btn");
+      if (btn) { btn.disabled = false; btn.textContent = "Connect →"; }
+      leaveRoom();
     }
   };
 
