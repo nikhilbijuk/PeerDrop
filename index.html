@@ -455,7 +455,7 @@
     <p>Enter the secret code your peer shared with you to securely connect.</p>
     <input type="text" id="join-code-input" maxlength="9" placeholder="e.g. FIRE-1234" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter') joinRoom()"/>
     <br/><br/>
-    <button class="btn btn-secondary" onclick="joinRoom()">Connect →</button>
+    <button class="btn btn-secondary" id="join-btn" onclick="joinRoom()">Connect →</button>
     <button class="btn btn-ghost" onclick="closeModal('modal-join')">Cancel</button>
   </div>
 </div>
@@ -725,6 +725,8 @@ async function openCreateModal() {
 
 async function openJoinModal(initialCode) {
   openModal("modal-join");
+  const btn = document.getElementById("join-btn");
+  if (btn) { btn.disabled = false; btn.textContent = "Connect →"; }
   document.getElementById("join-code-input").value = initialCode || "";
   try { await connectWS(); } catch { toast("⚠ Server not reachable"); closeModal("modal-join"); }
 }
@@ -732,6 +734,8 @@ async function openJoinModal(initialCode) {
 async function joinRoom() {
   const code = document.getElementById("join-code-input").value.trim().toUpperCase();
   if (code.length < 4) { toast("Enter a valid room code"); return; }
+  const btn = document.getElementById("join-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Connecting..."; }
   sendSignal({ type: "join", roomCode: code });
 }
 
