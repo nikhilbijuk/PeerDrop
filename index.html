@@ -441,6 +441,34 @@
       <img id="qr-code-img" src="" alt="QR Code" style="width: 140px; height: 140px; border-radius: 8px; border: 4px solid white;">
       <div class="hint" style="margin-top: 8px; font-size: 0.75rem; color: var(--muted);">Scan with phone to join instantly</div>
     </div>
+    <div id="local-warning-panel" style="display: none; margin-top: 16px; text-align: left; padding: 14px; background: rgba(255, 181, 71, 0.05); border: 1px solid rgba(255, 181, 71, 0.2); border-radius: var(--radius); transition: all 0.3s ease;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span style="color: #ffb547; font-size: 1.1rem;">⚠</span>
+        <strong style="color: #ffb547; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Local Setup Warning</strong>
+      </div>
+      <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; line-height: 1.4;">
+        Scanning this QR code on a mobile device won't work because the app is running locally. To connect a mobile device:
+      </p>
+      <details style="margin-bottom: 12px;">
+        <summary style="font-size: 0.72rem; color: var(--accent); cursor: pointer; user-select: none; font-weight: 600;">
+          How to connect over Wi-Fi?
+        </summary>
+        <div style="font-size: 0.72rem; color: var(--muted); padding: 8px 0 0 8px; line-height: 1.4; border-left: 2px solid var(--border);">
+          1. Connect both devices to the <strong>same Wi-Fi network</strong>.<br>
+          2. Find your PC's local IP (e.g., <code>192.168.1.50</code>).<br>
+          3. Serve this folder (e.g. via Live Server on port 5500).<br>
+          4. Enter that URL below (e.g., <code>http://192.168.1.50:5500</code>).
+        </div>
+      </details>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label for="custom-base-url" style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">Custom Base URL / IP Address</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="custom-base-url" placeholder="e.g. http://192.168.1.50:5500" style="font-size: 0.8rem; padding: 8px 12px; height: 36px; flex: 1;" onkeydown="if(event.key==='Enter') applyCustomBaseUrl()">
+          <button class="btn btn-secondary" style="width: auto; height: 36px; padding: 0 16px; font-size: 0.8rem;" onclick="applyCustomBaseUrl()">Apply</button>
+        </div>
+        <div style="font-size: 0.65rem; color: var(--muted); margin-top: 4px;" id="qr-preview-url-text"></div>
+      </div>
+    </div>
     <div class="waiting-indicator" id="waiting-indicator">
       <div class="spinner"></div>
       Waiting for peer to join…
@@ -552,10 +580,30 @@ async function handleSignal(msg) {
       STATE.roomCode = msg.roomCode;
       document.getElementById("create-room-code").textContent = msg.roomCode;
       
-      const joinUrl = window.location.origin + window.location.pathname + "?room=" + msg.roomCode;
-      document.getElementById("qr-code-img").src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(joinUrl);
-      document.getElementById("qr-container").style.display = "block";
+      // Check if we are running on a local/file origin
+      if (isLocalOrigin()) {
+        document.getElementById("local-warning-panel").style.display = "block";
+        const savedUrl = localStorage.getItem("peerdrop_custom_base_url") || "";
+        const inputEl = document.getElementById("custom-base-url");
+        if (inputEl) {
+          inputEl.value = savedUrl;
+          if (!savedUrl) {
+            // Generate a smart placeholder
+            let placeholder = "http://192.168.1.50";
+            if (window.location.port) placeholder += ":" + window.location.port;
+            if (window.location.protocol === "file:") {
+              placeholder += "/index.html";
+            } else {
+              placeholder += window.location.pathname;
+            }
+            inputEl.placeholder = "e.g. " + placeholder;
+          }
+        }
+      } else {
+        document.getElementById("local-warning-panel").style.display = "none";
+      }
 
+      updateQrCodeDisplay();
       log(`Room ${msg.roomCode} created — waiting for peer…`, "info");
       break;
 
@@ -973,6 +1021,74 @@ function formatSize(bytes) {
   if (bytes < 1024**2) return (bytes/1024).toFixed(1) + " KB";
   if (bytes < 1024**3) return (bytes/1024**2).toFixed(1) + " MB";
   return (bytes/1024**3).toFixed(2) + " GB";
+}
+
+function isLocalOrigin() {
+  const origin = window.location.origin;
+  const host = window.location.hostname;
+  return origin.startsWith("file://") || 
+         origin === "null" ||
+         host === "localhost" || 
+         host === "127.0.0.1" || 
+         host === "::1" ||
+         !host;
+}
+
+function getJoinUrl(roomCode) {
+  let baseUrl = localStorage.getItem("peerdrop_custom_base_url");
+  if (!baseUrl) {
+    let origin = window.location.origin;
+    if (origin === "null" || origin.startsWith("file://")) {
+      origin = "http://localhost:5500";
+    }
+    baseUrl = origin + window.location.pathname;
+  }
+  
+  let url;
+  try {
+    url = new URL(baseUrl);
+  } catch (e) {
+    try {
+      url = new URL("http://" + baseUrl);
+    } catch (err) {
+      url = new URL(window.location.href);
+    }
+  }
+  
+  url.searchParams.set("room", roomCode);
+  return url.toString();
+}
+
+function updateQrCodeDisplay() {
+  if (!STATE.roomCode) return;
+  const joinUrl = getJoinUrl(STATE.roomCode);
+  
+  document.getElementById("qr-code-img").src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(joinUrl);
+  document.getElementById("qr-container").style.display = "block";
+  
+  const previewEl = document.getElementById("qr-preview-url-text");
+  if (previewEl) {
+    previewEl.innerHTML = `QR points to: <code style="word-break: break-all; color: var(--accent);">${escHtml(joinUrl)}</code>`;
+  }
+}
+
+function applyCustomBaseUrl() {
+  const inputEl = document.getElementById("custom-base-url");
+  if (!inputEl) return;
+  
+  let val = inputEl.value.trim();
+  if (!val) {
+    localStorage.removeItem("peerdrop_custom_base_url");
+    toast("Reset QR code to default URL");
+  } else {
+    if (!/^https?:\/\//i.test(val)) {
+      val = "http://" + val;
+    }
+    localStorage.setItem("peerdrop_custom_base_url", val);
+    inputEl.value = val;
+    toast("Custom base URL applied!");
+  }
+  updateQrCodeDisplay();
 }
 </script>
 </body>

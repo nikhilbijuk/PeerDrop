@@ -85,6 +85,8 @@ wss.on("connection", (ws) => {
           return;
         }
         const peers = rooms.get(code);
+        if (peers.has(peerId)) return; // Ignore duplicate join from same peer
+
         if (peers.size >= 2) {
           // If a 3rd connection tries to join (e.g. user moved from QR scanner to Safari),
           // kick the 2nd connection to make room, keeping the original creator.
