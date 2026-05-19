@@ -437,6 +437,10 @@
       <div class="code" id="create-room-code" onclick="copyRoomCode()" title="Click to copy">—</div>
       <div class="hint">Click to copy</div>
     </div>
+    <div class="qr-container" style="text-align: center; margin-top: 16px; display: none;" id="qr-container">
+      <img id="qr-code-img" src="" alt="QR Code" style="width: 140px; height: 140px; border-radius: 8px; border: 4px solid white;">
+      <div class="hint" style="margin-top: 8px; font-size: 0.75rem; color: var(--muted);">Scan with phone to join instantly</div>
+    </div>
     <div class="waiting-indicator" id="waiting-indicator">
       <div class="spinner"></div>
       Waiting for peer to join…
@@ -459,6 +463,17 @@
 <div id="toast"></div>
 
 <script>
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomParam = urlParams.get('room');
+  if (roomParam) {
+    document.getElementById("join-code-input").value = roomParam;
+    openJoinModal();
+    // Short delay to let WS connect if needed, but connectWS is called inside openJoinModal
+    setTimeout(joinRoom, 500); 
+  }
+});
+
 /* ══════════════════════════════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════════════════════════════ */
@@ -476,7 +491,7 @@ const STATE = {
 };
 
 // Change this to your server URL if hosted remotely
-const WS_URL = `ws://${location.hostname}:3000`;
+const WS_URL = `wss://peerdrop-production-7711.up.railway.app`;
 
 /* ══════════════════════════════════════════════════════════════════════
    LOGGING
@@ -537,6 +552,11 @@ async function handleSignal(msg) {
       STATE.peerId   = msg.peerId;
       STATE.roomCode = msg.roomCode;
       document.getElementById("create-room-code").textContent = msg.roomCode;
+      
+      const joinUrl = window.location.origin + window.location.pathname + "?room=" + msg.roomCode;
+      document.getElementById("qr-code-img").src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(joinUrl);
+      document.getElementById("qr-container").style.display = "block";
+
       log(`Room ${msg.roomCode} created — waiting for peer…`, "info");
       break;
 
