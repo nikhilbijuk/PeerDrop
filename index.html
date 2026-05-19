@@ -340,9 +340,12 @@
 <div class="app">
   <header>
     <div class="logo">Peer<span>Drop</span></div>
-    <div class="status-pill" id="status-pill">
-      <div class="status-dot" id="status-dot"></div>
-      <span id="status-text">NOT CONNECTED</span>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button class="icon-btn" onclick="openNetworkSettings()" style="padding: 6px 10px; font-size: 0.72rem;" title="WebRTC STUN/TURN Settings">⚙ Config</button>
+      <div class="status-pill" id="status-pill">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">NOT CONNECTED</span>
+      </div>
     </div>
   </header>
 
@@ -485,6 +488,38 @@
     <br/><br/>
     <button class="btn btn-secondary" id="join-btn" onclick="joinRoom()">Connect →</button>
     <button class="btn btn-ghost" onclick="closeModal('modal-join')">Cancel</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-network">
+  <div class="modal" style="max-width: 440px;">
+    <h2>WebRTC Config (STUN/TURN)</h2>
+    <p>By default, PeerDrop uses free Google STUN and public TURN. If your connection fails across cellular (4G/5G) and Wi-Fi networks, configure your own custom TURN credentials here.</p>
+    
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">TURN Server URL</label>
+        <input type="text" id="turn-url-input" placeholder="e.g. turn:openrelay.metered.ca:443" style="font-size: 0.85rem; padding: 10px 14px; text-transform: none; letter-spacing: 0;">
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">TURN Username</label>
+        <input type="text" id="turn-user-input" placeholder="e.g. your-metered-username" style="font-size: 0.85rem; padding: 10px 14px; text-transform: none; letter-spacing: 0;">
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">TURN Password / Credential</label>
+        <input type="text" id="turn-cred-input" placeholder="e.g. your-metered-credential" style="font-size: 0.85rem; padding: 10px 14px; text-transform: none; letter-spacing: 0;">
+      </div>
+    </div>
+    
+    <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; line-height: 1.4;">
+      💡 Get free personal TURN server credentials (up to 50GB/month) by signing up at <a href="https://www.metered.ca/" target="_blank" style="color: var(--accent); text-decoration: none;">Metered.ca</a>.
+    </div>
+
+    <button class="btn btn-primary" onclick="saveNetworkSettings()">Save Config</button>
+    <button class="btn btn-ghost" onclick="resetNetworkSettings()">Reset to Default</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-network')" style="margin-top: 6px;">Close</button>
   </div>
 </div>
 
@@ -671,28 +706,49 @@ async function flushIceCandidates() {
 /* ══════════════════════════════════════════════════════════════════════
    WEBRTC
 ══════════════════════════════════════════════════════════════════════ */
-const ICE_SERVERS = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  {
-    urls: "turn:openrelay.metered.ca:80",
-    username: "openrelayproject",
-    credential: "openrelayproject"
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443",
-    username: "openrelayproject",
-    credential: "openrelayproject"
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443?transport=tcp",
-    username: "openrelayproject",
-    credential: "openrelayproject"
+function getIceServers() {
+  const customUrl = localStorage.getItem("peerdrop_turn_url");
+  const customUser = localStorage.getItem("peerdrop_turn_username");
+  const customCred = localStorage.getItem("peerdrop_turn_credential");
+  
+  const servers = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" }
+  ];
+  
+  if (customUrl && customUser && customCred) {
+    servers.push({
+      urls: customUrl,
+      username: customUser,
+      credential: customCred
+    });
+  } else {
+    servers.push(
+      {
+        urls: "turn:openrelay.metered.ca:80",
+        username: "openrelayproject",
+        credential: "openrelayproject"
+      },
+      {
+        urls: "turn:openrelay.metered.ca:443",
+        username: "openrelayproject",
+        credential: "openrelayproject"
+      },
+      {
+        urls: "turn:openrelay.metered.ca:443?transport=tcp",
+        username: "openrelayproject",
+        credential: "openrelayproject"
+      }
+    );
   }
-];
+  return servers;
+}
 
 async function initPeerConnection() {
-  STATE.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  const servers = getIceServers();
+  log("Initializing WebRTC with " + servers.length + " ICE servers", "info");
+  STATE.pc = new RTCPeerConnection({ iceServers: servers });
 
   STATE.pc.onicecandidate = (e) => {
     if (e.candidate) sendSignal({ type: "ice-candidate", candidate: e.candidate });
@@ -1089,6 +1145,46 @@ function applyCustomBaseUrl() {
     toast("Custom base URL applied!");
   }
   updateQrCodeDisplay();
+}
+
+function openNetworkSettings() {
+  openModal("modal-network");
+  document.getElementById("turn-url-input").value = localStorage.getItem("peerdrop_turn_url") || "";
+  document.getElementById("turn-user-input").value = localStorage.getItem("peerdrop_turn_username") || "";
+  document.getElementById("turn-cred-input").value = localStorage.getItem("peerdrop_turn_credential") || "";
+}
+
+function saveNetworkSettings() {
+  const url = document.getElementById("turn-url-input").value.trim();
+  const user = document.getElementById("turn-user-input").value.trim();
+  const cred = document.getElementById("turn-cred-input").value.trim();
+  
+  if (url && (!user || !cred)) {
+    toast("⚠ Please provide both Username and Password");
+    return;
+  }
+  
+  if (!url) {
+    resetNetworkSettings();
+    return;
+  }
+  
+  localStorage.setItem("peerdrop_turn_url", url);
+  localStorage.setItem("peerdrop_turn_username", user);
+  localStorage.setItem("peerdrop_turn_credential", cred);
+  toast("⚙ Custom WebRTC Config saved!");
+  closeModal("modal-network");
+}
+
+function resetNetworkSettings() {
+  localStorage.removeItem("peerdrop_turn_url");
+  localStorage.removeItem("peerdrop_turn_username");
+  localStorage.removeItem("peerdrop_turn_credential");
+  document.getElementById("turn-url-input").value = "";
+  document.getElementById("turn-user-input").value = "";
+  document.getElementById("turn-cred-input").value = "";
+  toast("⚙ WebRTC Config reset to default.");
+  closeModal("modal-network");
 }
 </script>
 </body>
