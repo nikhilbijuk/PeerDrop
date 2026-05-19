@@ -86,8 +86,18 @@ wss.on("connection", (ws) => {
         }
         const peers = rooms.get(code);
         if (peers.size >= 2) {
-          send(ws, { type: "error", message: "Room is full (max 2 peers)" });
-          return;
+          // If a 3rd connection tries to join (e.g. user moved from QR scanner to Safari),
+          // kick the 2nd connection to make room, keeping the original creator.
+          const iterator = peers.entries();
+          iterator.next(); // Skip the first peer (creator)
+          const [oldPeerId, oldWs] = iterator.next().value;
+          
+          peers.delete(oldPeerId);
+          try {
+            send(oldWs, { type: "error", message: "Disconnected: Reconnected from elsewhere" });
+            oldWs.close();
+          } catch (e) {}
+          console.log(`[!] Kicked lingering peer ${oldPeerId} to allow new joiner`);
         }
 
         peers.set(peerId, ws);
