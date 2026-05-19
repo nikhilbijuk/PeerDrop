@@ -526,13 +526,12 @@
 <div id="toast"></div>
 
 <script>
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const roomParam = urlParams.get('room');
   if (roomParam) {
-    openJoinModal(roomParam);
-    // Short delay to let WS connect if needed, but connectWS is called inside openJoinModal
-    setTimeout(joinRoom, 500); 
+    await openJoinModal(roomParam);
+    await joinRoom(); 
   }
 });
 
@@ -857,6 +856,18 @@ async function joinRoom() {
   if (code.length < 4) { toast("Enter a valid room code"); return; }
   const btn = document.getElementById("join-btn");
   if (btn) { btn.disabled = true; btn.textContent = "Connecting..."; }
+  
+  // If WS is not connected, try to connect it first
+  if (!STATE.ws || STATE.ws.readyState !== WebSocket.OPEN) {
+    try {
+      await connectWS();
+    } catch (err) {
+      toast("⚠ Server not reachable");
+      if (btn) { btn.disabled = false; btn.textContent = "Connect →"; }
+      return;
+    }
+  }
+  
   sendSignal({ type: "join", roomCode: code });
 }
 
