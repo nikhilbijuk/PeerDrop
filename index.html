@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PeerDrop — P2P Share</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Reset & Base ──────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0a0f;
+    --bg2:       #111118;
+    --bg3:       #18181f;
+    --border:    #2a2a35;
+    --border2:   #3a3a48;
+    --accent:    #00e5c8;
+    --accent2:   #7c5cff;
+    --accent3:   #ff5c8a;
+    --text:      #eeeef3;
+    --muted:     #7878a0;
+    --card:      rgba(255,255,255,0.03);
+    --card-h:    rgba(255,255,255,0.06);
+    --radius:    14px;
+    --font:      'Syne', sans-serif;
+    --mono:      'DM Mono', monospace;
+  }
+
+  html { font-size: 16px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ─────────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: .4;
+  }
+
+  /* ── Animated gradient orbs ────────────────────────────────────────── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: .18;
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 14s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 600px; height: 600px; background: var(--accent2); top: -200px; left: -200px; animation-duration: 18s; }
+  .orb-2 { width: 400px; height: 400px; background: var(--accent);  bottom: -100px; right: -100px; animation-duration: 12s; }
+  .orb-3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 40%; animation-duration: 22s; }
+  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,30px) scale(1.1); } }
+
+  /* ── Layout ────────────────────────────────────────────────────────── */
+  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* ── Header ────────────────────────────────────────────────────────── */
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 56px; }
+  .logo {
+    font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .logo span { color: var(--accent3); -webkit-text-fill-color: var(--accent3); }
+  .status-pill {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 14px;
+    font-size: .72rem; font-family: var(--mono); letter-spacing: .04em; color: var(--muted);
+    transition: all .3s;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+    transition: background .4s;
+  }
+  .status-pill.connected { border-color: var(--accent); color: var(--accent); }
+  .status-pill.connected .status-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse-dot 2s ease infinite; }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+  /* ── Lobby ─────────────────────────────────────────────────────────── */
+  #lobby { display: flex; flex-direction: column; align-items: center; gap: 20px; padding-top: 20px; }
+  .hero-text { text-align: center; margin-bottom: 12px; }
+  .hero-text h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+  .hero-text h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero-text p { color: var(--muted); font-size: .95rem; margin-top: 12px; }
+
+  .lobby-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 560px; }
+  @media (max-width: 520px) { .lobby-cards { grid-template-columns: 1fr; } }
+
+  .lobby-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    cursor: pointer;
+    transition: all .25s;
+    position: relative; overflow: hidden;
+  }
+  .lobby-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.02));
+    transition: opacity .3s;
+  }
+  .lobby-card:hover { border-color: var(--border2); background: var(--card-h); transform: translateY(-2px); }
+  .lobby-card:hover::before { opacity: 0; }
+  .lobby-card .card-icon { font-size: 2rem; margin-bottom: 14px; }
+  .lobby-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+  .lobby-card p { font-size: .8rem; color: var(--muted); line-height: 1.5; }
+  .lobby-card.create-card { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+  .lobby-card.create-card:hover { border-color: var(--accent); box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 15%, transparent); }
+  .lobby-card.join-card { border-color: color-mix(in srgb, var(--accent2) 30%, transparent); }
+  .lobby-card.join-card:hover { border-color: var(--accent2); box-shadow: 0 0 24px color-mix(in srgb, var(--accent2) 15%, transparent); }
+
+  /* ── Modals ────────────────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(8px);
+    z-index: 200; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 420px;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+  .modal p { color: var(--muted); font-size: .85rem; margin-bottom: 24px; line-height: 1.5; }
+  .room-code-display {
+    text-align: center; padding: 18px; background: var(--bg3);
+    border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px;
+  }
+  .room-code-display .code {
+    font-family: var(--mono); font-size: 2rem; font-weight: 500; letter-spacing: .1em;
+    color: var(--accent); cursor: pointer;
+  }
+  .room-code-display .hint { font-size: .72rem; color: var(--muted); margin-top: 6px; }
+  input[type="text"] {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; color: var(--text); font-family: var(--mono);
+    font-size: 1rem; letter-spacing: .08em; text-transform: uppercase;
+    outline: none; transition: border-color .2s;
+  }
+  input[type="text"]::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
+  input[type="text"]:focus { border-color: var(--accent2); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 24px; border-radius: 8px; font-family: var(--font); font-weight: 700;
+    font-size: .9rem; cursor: pointer; border: none; transition: all .2s; width: 100%;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-secondary { background: var(--accent2); color: #fff; }
+  .btn-secondary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-ghost { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); margin-top: 10px; }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+  .btn-danger { background: var(--accent3); color: #fff; }
+  .waiting-indicator { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: .85rem; margin: 16px 0; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Connected Room ────────────────────────────────────────────────── */
+  #room { display: none; }
+  .room-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+  }
+  .room-info { display: flex; flex-direction: column; gap: 4px; }
+  .room-info .label { font-size: .72rem; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+  .room-info .code-badge {
+    font-family: var(--mono); font-size: 1.1rem; color: var(--accent); letter-spacing: .08em;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .room-actions { display: flex; gap: 10px; }
+  .icon-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px; font-family: var(--font); font-size: .8rem;
+    font-weight: 600; color: var(--muted); cursor: pointer; transition: all .2s;
+  }
+  .icon-btn:hover { border-color: var(--border2); color: var(--text); }
+  .icon-btn.danger:hover { border-color: var(--accent3); color: var(--accent3); }
+  .icon-btn.active { border-color: var(--accent3); color: var(--accent3); background: color-mix(in srgb, var(--accent3) 10%, transparent); }
+
+  /* ── Tabs ──────────────────────────────────────────────────────────── */
+  .tabs { display: flex; gap: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+  .tab {
+    flex: 1; padding: 9px 12px; border-radius: 7px; font-family: var(--font); font-weight: 600;
+    font-size: .82rem; cursor: pointer; border: none; background: transparent; color: var(--muted);
+    transition: all .2s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .tab.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+
+  /* ── Tab panels ────────────────────────────────────────────────────── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn .15s ease; }
+
+  /* ── File drop zone ────────────────────────────────────────────────── */
+  .drop-zone {
+    border: 2px dashed var(--border2); border-radius: var(--radius); padding: 48px 24px;
+    text-align: center; cursor: pointer; transition: all .25s; position: relative;
+    background: var(--card);
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent); }
+  .drop-zone .drop-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .drop-zone h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .drop-zone p { font-size: .8rem; color: var(--muted); }
+  #file-input { display: none; }
+
+  /* ── Transfer list ─────────────────────────────────────────────────── */
+  .transfers { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .transfer-item {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+    animation: slideUp .2s ease;
+  }
+  .transfer-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .transfer-info { flex: 1; min-width: 0; }
+  .transfer-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .transfer-meta { font-size: .72rem; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 999px; margin-top: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; transition: width .2s; }
+  .transfer-action { flex-shrink: 0; }
+  .dl-btn {
+    background: var(--accent); color: #000; border: none; border-radius: 6px;
+    padding: 7px 14px; font-family: var(--font); font-weight: 700; font-size: .78rem;
+    cursor: pointer; transition: all .2s; text-decoration: none; display: inline-block;
+  }
+  .dl-btn:hover { filter: brightness(1.1); }
+
+  /* ── Text panel ────────────────────────────────────────────────────── */
+  .text-area-wrap { position: relative; }
+  textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; color: var(--text); font-family: var(--mono);
+    font-size: .88rem; resize: vertical; min-height: 140px; outline: none;
+    transition: border-color .2s; line-height: 1.6;
+  }
+  textarea:focus { border-color: var(--accent2); }
+  .text-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .text-actions .btn { flex: 1; }
+  .received-texts { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .received-bubble {
+    background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
+    border-radius: 0 10px 10px 0; padding: 12px 16px; font-family: var(--mono); font-size: .85rem;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word; animation: slideUp .2s ease;
+  }
+  .received-bubble .bubble-meta { font-size: .68rem; color: var(--muted); margin-bottom: 6px; }
+  .bubble-copy { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: .8rem; transition: color .2s; }
+  .bubble-copy:hover { color: var(--accent); }
+
+  /* ── Screen panel ──────────────────────────────────────────────────── */
+  .screen-section { display: flex; flex-direction: column; gap: 14px; }
+  .screen-preview {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .screen-preview video { width: 100%; height: 100%; object-fit: contain; display: none; }
+  .screen-placeholder { text-align: center; color: var(--muted); }
+  .screen-placeholder .big-icon { font-size: 3rem; margin-bottom: 12px; }
+  .screen-placeholder p { font-size: .85rem; }
+  .screen-btns { display: flex; gap: 10px; }
+  .screen-btns .btn { flex: 1; }
+
+  /* ── Chat / log ────────────────────────────────────────────────────── */
+  .log-wrap {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    height: 140px; overflow-y: auto; padding: 12px 14px;
+    scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+    margin-top: 20px;
+  }
+  .log-line { font-family: var(--mono); font-size: .72rem; color: var(--muted); line-height: 1.7; }
+  .log-line.info  { color: var(--accent); }
+  .log-line.error { color: var(--accent3); }
+  .log-line.warn  { color: #ffb547; }
+
+  /* ── Toast ─────────────────────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 999px;
+    padding: 10px 22px; font-size: .85rem; font-weight: 600;
+    box-shadow: 0 4px 24px rgba(0,0,0,.5); z-index: 300;
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── UI/UX Enhancements ── */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  :focus:not(:focus-visible) { outline: none; }
+
+  .lobby-card, .tab, .icon-btn, .bubble-copy, .dl-btn, .code-badge, .drop-zone { cursor: pointer; }
+  textarea, input[type="text"] { cursor: text; }
+
+  .tab:not(.active):hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .drop-zone.dragover {
+    box-shadow: 0 0 0 3px var(--accent), 0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  .btn:active { transform: translateY(1px); filter: brightness(0.95); }
+  .icon-btn:active { transform: translateY(1px); }
+
+  .log-wrap::-webkit-scrollbar { width: 5px; }
+  .log-wrap::-webkit-scrollbar-track { background: transparent; }
+  .log-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
+  .log-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  * { touch-action: manipulation; }
+</style>
+</head>
+<body>
+
+<!-- Ambient orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="app">
+  <header>
+    <div class="logo">Peer<span>Drop</span></div>
+    <div class="status-pill" id="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">NOT CONNECTED</span>
+    </div>
+  </header>
+
+  <!-- ── LOBBY ─────────────────────────────────────────────────────── -->
+  <div id="lobby">
+    <div class="hero-text">
+      <h1>Fast, private sharing<br/><em>directly between browsers.</em></h1>
+      <p>Send files of any size, chat securely, and share your screen. No cloud storage, no traces.</p>
+    </div>
+    <div class="lobby-cards">
+      <div class="lobby-card create-card" onclick="openCreateModal()">
+        <div class="card-icon">✦</div>
+        <h3>Create room</h3>
+        <p>Start a session and share your room code with someone.</p>
+      </div>
+      <div class="lobby-card join-card" onclick="openJoinModal()">
+        <div class="card-icon">⇢</div>
+        <h3>Join room</h3>
+        <p>Enter a room code to connect with a peer instantly.</p>
+      </div>
+    </div>
+    <div class="log-wrap" id="lobby-log" style="width:100%;max-width:560px;margin-top:8px;"></div>
+  </div>
+
+  <!-- ── ROOM ──────────────────────────────────────────────────────── -->
+  <div id="room">
+    <div class="room-header">
+      <div class="room-info">
+        <span class="label">Room code</span>
+        <span class="code-badge" id="room-code-badge" onclick="copyRoomCode()" title="Click to copy room code">— <span style="font-size:.7rem;color:var(--muted)">copy</span></span>
+      </div>
+      <div class="room-actions">
+        <button class="icon-btn danger" onclick="leaveRoom()">✕ Leave</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-panel="files" onclick="switchTab(this)">📁 Files</button>
+      <button class="tab" data-panel="text"  onclick="switchTab(this)">📋 Text</button>
+      <button class="tab" data-panel="screen" onclick="switchTab(this)">🖥 Screen</button>
+    </div>
+
+    <!-- FILES -->
+    <div class="tab-panel active" id="panel-files">
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div class="drop-icon">📦</div>
+        <h3>Drop files here</h3>
+        <p>or click to browse — any size, any type</p>
+      </div>
+      <input type="file" id="file-input" multiple/>
+      <div class="transfers" id="transfers"></div>
+    </div>
+
+    <!-- TEXT -->
+    <div class="tab-panel" id="panel-text">
+      <div class="text-area-wrap">
+        <textarea id="text-input" placeholder="Type or paste anything… (Ctrl+Enter to send)"></textarea>
+      </div>
+      <div class="text-actions">
+        <button class="btn btn-secondary" onclick="sendText()">Send →</button>
+        <button class="btn btn-ghost" onclick="clearText()">Clear</button>
+      </div>
+      <div class="received-texts" id="received-texts"></div>
+    </div>
+
+    <!-- SCREEN -->
+    <div class="tab-panel" id="panel-screen">
+      <div class="screen-section">
+        <div class="screen-preview" id="screen-preview">
+          <video id="screen-video" autoplay playsinline></video>
+          <div class="screen-placeholder" id="screen-placeholder">
+            <div class="big-icon">🖥</div>
+            <p>No stream active</p>
+          </div>
+        </div>
+        <div class="screen-btns">
+          <button class="btn btn-primary" id="share-screen-btn" onclick="toggleScreenShare()">Share my screen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-wrap" id="room-log" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+<!-- ── MODALS ──────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-create">
+  <div class="modal">
+    <h2>Create a new connection</h2>
+    <p>Share this secret code with your peer. Once they enter it, you'll be connected directly. We never see or store your files.</p>
+    <div class="room-code-display" id="create-code-display">
+      <div class="code" id="create-room-code" onclick="copyRoomCode()" title="Click to copy">—</div>
+      <div class="hint">Click to copy</div>
+    </div>
+    <div class="waiting-indicator" id="waiting-indicator">
+      <div class="spinner"></div>
+      Waiting for peer to join…
+    </div>
+    <button class="btn btn-ghost" onclick="closeModal('modal-create'); leaveRoom()">Cancel</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-join">
+  <div class="modal">
+    <h2>Join your peer</h2>
+    <p>Enter the secret code your peer shared with you to securely connect.</p>
+    <input type="text" id="join-code-input" maxlength="9" placeholder="e.g. FIRE-1234" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter') joinRoom()"/>
+    <br/><br/>
+    <button class="btn btn-secondary" onclick="joinRoom()">Connect →</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-join')">Cancel</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════════════ */
+const STATE = {
+  ws: null,
+  pc: null,
+  peerId: null,
+  roomCode: null,
+  isInitiator: false,
+  dataChannel: null,
+  screenStream: null,
+  screenSender: null,
+  pendingIce: [],
+  connected: false,
+};
+
+// Change this to your server URL if hosted remotely
+const WS_URL = `ws://${location.hostname}:3000`;
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOGGING
+══════════════════════════════════════════════════════════════════════ */
+function log(msg, level = "normal") {
+  const wrap = document.getElementById(STATE.roomCode ? "room-log" : "lobby-log");
+  const line = document.createElement("div");
+  line.className = `log-line ${level}`;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  wrap.appendChild(line);
+  wrap.scrollTop = wrap.scrollHeight;
+  console.log(msg);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════════════════ */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   STATUS
+══════════════════════════════════════════════════════════════════════ */
+function setStatus(label, connected = false) {
+  document.getElementById("status-text").textContent = label;
+  const pill = document.getElementById("status-pill");
+  pill.className = "status-pill" + (connected ? " connected" : "");
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   WEBSOCKET / SIGNALING
+══════════════════════════════════════════════════════════════════════ */
+function connectWS() {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(WS_URL);
+    STATE.ws = ws;
+    ws.onopen  = () => { log("Connected to signaling server", "info"); setStatus("SERVER OK"); resolve(ws); };
+    ws.onerror = ()  => { log("Cannot reach signaling server. Is it running?", "error"); reject(); };
+    ws.onclose = ()  => { log("Disconnected from signaling server", "warn"); setStatus("DISCONNECTED"); };
+    ws.onmessage = (e) => handleSignal(JSON.parse(e.data));
+  });
+}
+
+function sendSignal(data) {
+  if (STATE.ws && STATE.ws.readyState === WebSocket.OPEN)
+    STATE.ws.send(JSON.stringify(data));
+}
+
+async function handleSignal(msg) {
+  switch (msg.type) {
+    case "created":
+      STATE.peerId   = msg.peerId;
+      STATE.roomCode = msg.roomCode;
+      document.getElementById("create-room-code").textContent = msg.roomCode;
+      log(`Room ${msg.roomCode} created — waiting for peer…`, "info");
+      break;
+
+    case "joined":
+      STATE.peerId   = msg.peerId;
+      STATE.roomCode = msg.roomCode;
+      log(`Joined room ${msg.roomCode}`, "info");
+      break;
+
+    case "peer-joined":
+      log("Peer joined! Initiating WebRTC handshake…", "info");
+      STATE.isInitiator = true;
+      await initPeerConnection();
+      setupDataChannel();
+      const offer = await STATE.pc.createOffer();
+      await STATE.pc.setLocalDescription(offer);
+      sendSignal({ type: "offer", sdp: offer.sdp });
+      break;
+
+    case "offer":
+      log("Received WebRTC offer…", "info");
+      await initPeerConnection();
+      await STATE.pc.setRemoteDescription({ type: "offer", sdp: msg.sdp });
+      await flushIceCandidates();
+      const answer = await STATE.pc.createAnswer();
+      await STATE.pc.setLocalDescription(answer);
+      sendSignal({ type: "answer", sdp: answer.sdp });
+      break;
+
+    case "answer":
+      log("Received WebRTC answer…", "info");
+      await STATE.pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
+      await flushIceCandidates();
+      break;
+
+    case "ice-candidate":
+      if (msg.candidate) {
+        const cand = new RTCIceCandidate(msg.candidate);
+        if (STATE.pc && STATE.pc.remoteDescription)
+          await STATE.pc.addIceCandidate(cand).catch(() => {});
+        else
+          STATE.pendingIce.push(cand);
+      }
+      break;
+
+    case "peer-left":
+      log("Peer disconnected.", "warn");
+      setStatus("PEER LEFT");
+      STATE.connected = false;
+      break;
+
+    case "error":
+      log("Server: " + msg.message, "error");
+      toast("⚠ " + msg.message);
+      break;
+  }
+}
+
+async function flushIceCandidates() {
+  for (const cand of STATE.pendingIce)
+    await STATE.pc.addIceCandidate(cand).catch(() => {});
+  STATE.pendingIce = [];
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   WEBRTC
+══════════════════════════════════════════════════════════════════════ */
+const ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+];
+
+async function initPeerConnection() {
+  STATE.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+  STATE.pc.onicecandidate = (e) => {
+    if (e.candidate) sendSignal({ type: "ice-candidate", candidate: e.candidate });
+  };
+
+  STATE.pc.onconnectionstatechange = () => {
+    const s = STATE.pc.connectionState;
+    log(`WebRTC state: ${s}`);
+    if (s === "connected") {
+      STATE.connected = true;
+      setStatus("P2P CONNECTED", true);
+      closeModal("modal-create");
+      closeModal("modal-join");
+      showRoom();
+      toast("🎉 Connected! Start sharing.");
+    }
+    if (s === "disconnected" || s === "failed") {
+      STATE.connected = false;
+      setStatus("DISCONNECTED");
+    }
+  };
+
+  STATE.pc.ondatachannel = (e) => {
+    STATE.dataChannel = e.channel;
+    wireDataChannel();
+    log("Data channel ready", "info");
+  };
+
+  STATE.pc.ontrack = (e) => {
+    const vid = document.getElementById("screen-video");
+    vid.srcObject = e.streams[0];
+    vid.style.display = "block";
+    document.getElementById("screen-placeholder").style.display = "none";
+    log("Receiving screen share", "info");
+  };
+}
+
+function setupDataChannel() {
+  STATE.dataChannel = STATE.pc.createDataChannel("drop", { ordered: true });
+  wireDataChannel();
+}
+
+function wireDataChannel() {
+  const dc = STATE.dataChannel;
+  dc.binaryType = "arraybuffer";
+
+  let recvMeta = null;
+  let recvBufs = [];
+  let recvBytes = 0;
+
+  dc.onmessage = (e) => {
+    if (typeof e.data === "string") {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "text") {
+        renderReceivedText(msg.content);
+        toast("📋 Text received");
+      } else if (msg.type === "file-meta") {
+        recvMeta  = msg;
+        recvBufs  = [];
+        recvBytes = 0;
+        addTransferItem(msg.name, msg.size, "recv", msg.id);
+        log(`Receiving file: ${msg.name} (${formatSize(msg.size)})`, "info");
+      }
+    } else {
+      recvBufs.push(e.data);
+      recvBytes += e.data.byteLength;
+      updateProgress(recvMeta.id, recvBytes / recvMeta.size);
+      if (recvBytes >= recvMeta.size) {
+        const blob = new Blob(recvBufs, { type: recvMeta.mime });
+        offerDownload(blob, recvMeta.name, recvMeta.id);
+        toast("📦 File received!");
+        log(`File received: ${recvMeta.name}`, "info");
+        recvMeta = null; recvBufs = []; recvBytes = 0;
+      }
+    }
+  };
+
+  dc.onopen  = () => log("Data channel open", "info");
+  dc.onerror = (e) => log("Data channel error: " + e.message, "error");
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOBBY ACTIONS
+══════════════════════════════════════════════════════════════════════ */
+async function openCreateModal() {
+  openModal("modal-create");
+  document.getElementById("create-room-code").textContent = "…";
+  try {
+    await connectWS();
+    sendSignal({ type: "create" });
+  } catch { toast("⚠ Server not reachable"); closeModal("modal-create"); }
+}
+
+async function openJoinModal() {
+  openModal("modal-join");
+  document.getElementById("join-code-input").value = "";
+  try { await connectWS(); } catch { toast("⚠ Server not reachable"); closeModal("modal-join"); }
+}
+
+async function joinRoom() {
+  const code = document.getElementById("join-code-input").value.trim().toUpperCase();
+  if (code.length < 4) { toast("Enter a valid room code"); return; }
+  sendSignal({ type: "join", roomCode: code });
+}
+
+function showRoom() {
+  document.getElementById("lobby").style.display = "none";
+  document.getElementById("room").style.display  = "block";
+  document.getElementById("room-code-badge").innerHTML =
+    `${STATE.roomCode} <span style="font-size:.7rem;color:var(--muted)">copy</span>`;
+}
+
+function leaveRoom() {
+  if (STATE.pc)    { STATE.pc.close();    STATE.pc    = null; }
+  if (STATE.ws)    { STATE.ws.close();    STATE.ws    = null; }
+  if (STATE.screenStream) { STATE.screenStream.getTracks().forEach(t => t.stop()); STATE.screenStream = null; }
+  STATE.connected = false; STATE.roomCode = null;
+  document.getElementById("lobby").style.display = "";
+  document.getElementById("room").style.display  = "none";
+  document.getElementById("transfers").innerHTML = "";
+  document.getElementById("received-texts").innerHTML = "";
+  setStatus("NOT CONNECTED");
+  log("Left the room");
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FILE TRANSFER
+══════════════════════════════════════════════════════════════════════ */
+const CHUNK_SIZE = 64 * 1024; // 64 KB
+
+document.getElementById("drop-zone").addEventListener("dragover", (e) => {
+  e.preventDefault(); e.currentTarget.classList.add("dragover");
+});
+document.getElementById("drop-zone").addEventListener("dragleave", (e) => {
+  e.currentTarget.classList.remove("dragover");
+});
+document.getElementById("drop-zone").addEventListener("drop", (e) => {
+  e.preventDefault(); e.currentTarget.classList.remove("dragover");
+  [...e.dataTransfer.files].forEach(sendFile);
+});
+document.getElementById("file-input").addEventListener("change", (e) => {
+  [...e.target.files].forEach(sendFile); e.target.value = "";
+});
+
+async function sendFile(file) {
+  if (!STATE.connected) { toast("⚠ Not connected to a peer"); return; }
+  const id = crypto.randomUUID();
+  const meta = { type: "file-meta", id, name: file.name, size: file.size, mime: file.type };
+  STATE.dataChannel.send(JSON.stringify(meta));
+  addTransferItem(file.name, file.size, "send", id);
+  log(`Sending: ${file.name} (${formatSize(file.size)})`, "info");
+
+  const reader = new FileReader();
+  let offset = 0;
+  const sendChunk = () => {
+    const slice = file.slice(offset, offset + CHUNK_SIZE);
+    reader.readAsArrayBuffer(slice);
+  };
+  reader.onload = (e) => {
+    STATE.dataChannel.send(e.target.result);
+    offset += e.target.result.byteLength;
+    updateProgress(id, offset / file.size);
+    if (offset < file.size) {
+      // Throttle if buffer is filling
+      if (STATE.dataChannel.bufferedAmount > 1024 * 1024)
+        setTimeout(sendChunk, 50);
+      else sendChunk();
+    } else { log(`Sent: ${file.name}`, "info"); toast(`📦 ${file.name} sent!`); }
+  };
+  sendChunk();
+}
+
+function addTransferItem(name, size, dir, id) {
+  const el = document.createElement("div");
+  el.className = "transfer-item";
+  el.id = "transfer-" + id;
+  el.innerHTML = `
+    <div class="transfer-icon">${dir === "send" ? "⬆" : "⬇"}</div>
+    <div class="transfer-info">
+      <div class="transfer-name">${escHtml(name)}</div>
+      <div class="transfer-meta">${formatSize(size)} · ${dir === "send" ? "Sending" : "Receiving"}</div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-${id}" style="width:0%"></div></div>
+    </div>
+    <div class="transfer-action" id="action-${id}"></div>
+  `;
+  document.getElementById("transfers").prepend(el);
+}
+
+function updateProgress(id, pct) {
+  const el = document.getElementById("prog-" + id);
+  if (el) el.style.width = Math.round(pct * 100) + "%";
+}
+
+function offerDownload(blob, name, id) {
+  const url = URL.createObjectURL(blob);
+  const action = document.getElementById("action-" + id);
+  if (action) {
+    const a = document.createElement("a");
+    a.className = "dl-btn"; a.href = url; a.download = name; a.textContent = "Save";
+    action.appendChild(a);
+  }
+  const meta = document.querySelector(`#transfer-${id} .transfer-meta`);
+  if (meta) meta.textContent = formatSize(blob.size) + " · Ready to save";
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TEXT TRANSFER
+══════════════════════════════════════════════════════════════════════ */
+document.getElementById("text-input").addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") sendText();
+});
+
+function sendText() {
+  const val = document.getElementById("text-input").value.trim();
+  if (!val) { toast("Nothing to send"); return; }
+  if (!STATE.connected) { toast("⚠ Not connected to a peer"); return; }
+  STATE.dataChannel.send(JSON.stringify({ type: "text", content: val }));
+  toast("📋 Text sent!");
+  log("Sent text snippet", "info");
+}
+
+function clearText() { document.getElementById("text-input").value = ""; }
+
+function renderReceivedText(content) {
+  const wrap = document.getElementById("received-texts");
+  const el = document.createElement("div");
+  el.className = "received-bubble";
+  el.innerHTML = `
+    <div class="bubble-meta">
+      Received · ${new Date().toLocaleTimeString()}
+      <button class="bubble-copy" onclick="navigator.clipboard.writeText(this.closest('.received-bubble').querySelector('.bubble-content').textContent); toast('Copied!')">Copy</button>
+    </div>
+    <div class="bubble-content">${escHtml(content)}</div>
+  `;
+  wrap.prepend(el);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SCREEN SHARING
+══════════════════════════════════════════════════════════════════════ */
+let sharingScreen = false;
+async function toggleScreenShare() {
+  if (!STATE.connected) { toast("⚠ Not connected to a peer"); return; }
+  if (!sharingScreen) {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      STATE.screenStream = stream;
+
+      // Show local preview
+      const vid = document.getElementById("screen-video");
+      vid.srcObject = stream;
+      vid.style.display = "block";
+      document.getElementById("screen-placeholder").style.display = "none";
+
+      // Add tracks to peer connection
+      stream.getTracks().forEach(track => {
+        STATE.screenSender = STATE.pc.addTrack(track, stream);
+      });
+
+      // Renegotiate
+      const offer = await STATE.pc.createOffer();
+      await STATE.pc.setLocalDescription(offer);
+      sendSignal({ type: "offer", sdp: offer.sdp });
+
+      sharingScreen = true;
+      document.getElementById("share-screen-btn").textContent = "Stop sharing";
+      document.getElementById("share-screen-btn").className = "btn btn-danger";
+
+      stream.getVideoTracks()[0].onended = () => stopScreenShare();
+      log("Screen sharing started", "info");
+    } catch (err) {
+      log("Screen share cancelled or denied", "warn");
+    }
+  } else { stopScreenShare(); }
+}
+
+function stopScreenShare() {
+  if (STATE.screenStream) {
+    STATE.screenStream.getTracks().forEach(t => t.stop());
+    STATE.screenStream = null;
+  }
+  if (STATE.screenSender) {
+    STATE.pc.removeTrack(STATE.screenSender);
+    STATE.screenSender = null;
+  }
+  const vid = document.getElementById("screen-video");
+  vid.srcObject = null; vid.style.display = "none";
+  document.getElementById("screen-placeholder").style.display = "";
+  sharingScreen = false;
+  document.getElementById("share-screen-btn").textContent = "Share my screen";
+  document.getElementById("share-screen-btn").className = "btn btn-primary";
+  log("Screen sharing stopped", "warn");
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════════════ */
+function openModal(id)  { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+function switchTab(btn) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("panel-" + btn.dataset.panel).classList.add("active");
+}
+
+function copyRoomCode() {
+  const code = STATE.roomCode;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => toast("📋 " + code + " copied!"));
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024**2) return (bytes/1024).toFixed(1) + " KB";
+  if (bytes < 1024**3) return (bytes/1024**2).toFixed(1) + " MB";
+  return (bytes/1024**3).toFixed(2) + " GB";
+}
+</script>
+</body>
+</html>
