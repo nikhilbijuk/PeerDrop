@@ -467,8 +467,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const roomParam = urlParams.get('room');
   if (roomParam) {
-    document.getElementById("join-code-input").value = roomParam;
-    openJoinModal();
+    openJoinModal(roomParam);
     // Short delay to let WS connect if needed, but connectWS is called inside openJoinModal
     setTimeout(joinRoom, 500); 
   }
@@ -724,9 +723,9 @@ async function openCreateModal() {
   } catch { toast("⚠ Server not reachable"); closeModal("modal-create"); }
 }
 
-async function openJoinModal() {
+async function openJoinModal(initialCode) {
   openModal("modal-join");
-  document.getElementById("join-code-input").value = "";
+  document.getElementById("join-code-input").value = initialCode || "";
   try { await connectWS(); } catch { toast("⚠ Server not reachable"); closeModal("modal-join"); }
 }
 
