@@ -166,7 +166,19 @@ wss.on("connection", (ws) => {
   ws.on("error", (err) => console.error("WS error:", err.message));
 });
 
+const os = require('os');
+
 server.listen(PORT, () => {
-  console.log(`\n🚀 PeerDrop signaling server running on ws://localhost:${PORT}`);
-  console.log(`   Health check: http://localhost:${PORT}/health\n`);
+  console.log(`\n🚀 PeerDrop local server running!`);
+  console.log(`\n💻 Local access (this PC): http://localhost:${PORT}`);
+  
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        console.log(`📱 Network access (phone): http://${net.address}:${PORT}`);
+      }
+    }
+  }
+  console.log(`\n⚠️  Keep this window open while you are sharing files!`);
 });
