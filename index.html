@@ -154,6 +154,7 @@
     border-radius: 8px; padding: 12px 16px; color: var(--text); font-family: var(--mono);
     font-size: 1rem; letter-spacing: .08em; text-transform: uppercase;
     outline: none; transition: border-color .2s;
+    min-height: 48px;
   }
   input[type="text"]::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
   input[type="text"]:focus { border-color: var(--accent2); }
@@ -161,6 +162,7 @@
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     padding: 12px 24px; border-radius: 8px; font-family: var(--font); font-weight: 700;
     font-size: .9rem; cursor: pointer; border: none; transition: all .2s; width: 100%;
+    min-height: 48px;
   }
   .btn-primary { background: var(--accent); color: #000; }
   .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
@@ -191,6 +193,7 @@
     background: var(--bg3); border: 1px solid var(--border);
     border-radius: 8px; padding: 8px 14px; font-family: var(--font); font-size: .8rem;
     font-weight: 600; color: var(--muted); cursor: pointer; transition: all .2s;
+    min-height: 48px;
   }
   .icon-btn:hover { border-color: var(--border2); color: var(--text); }
   .icon-btn.danger:hover { border-color: var(--accent3); color: var(--accent3); }
@@ -202,6 +205,7 @@
     flex: 1; padding: 9px 12px; border-radius: 7px; font-family: var(--font); font-weight: 600;
     font-size: .82rem; cursor: pointer; border: none; background: transparent; color: var(--muted);
     transition: all .2s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 48px;
   }
   .tab.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
 
@@ -219,6 +223,17 @@
   .drop-zone .drop-icon { font-size: 2.5rem; margin-bottom: 12px; }
   .drop-zone h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
   .drop-zone p { font-size: .8rem; color: var(--muted); }
+  
+  @media (hover: none) and (pointer: coarse) {
+    .drop-zone h3 { display: none; }
+    .drop-zone::after {
+      content: "Tap to browse files";
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--accent); color: #000; padding: 12px 24px;
+      border-radius: 8px; font-weight: 700; font-size: .9rem;
+      margin-top: 10px; min-height: 48px;
+    }
+  }
   #file-input { display: none; }
 
   /* ── Transfer list ─────────────────────────────────────────────────── */
@@ -238,7 +253,8 @@
   .dl-btn {
     background: var(--accent); color: #000; border: none; border-radius: 6px;
     padding: 7px 14px; font-family: var(--font); font-weight: 700; font-size: .78rem;
-    cursor: pointer; transition: all .2s; text-decoration: none; display: inline-block;
+    cursor: pointer; transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px;
   }
   .dl-btn:hover { filter: brightness(1.1); }
 
@@ -260,7 +276,7 @@
     line-height: 1.6; white-space: pre-wrap; word-break: break-word; animation: slideUp .2s ease;
   }
   .received-bubble .bubble-meta { font-size: .68rem; color: var(--muted); margin-bottom: 6px; }
-  .bubble-copy { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: .8rem; transition: color .2s; }
+  .bubble-copy { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: .8rem; transition: color .2s; min-height: 48px; padding: 0 8px; }
   .bubble-copy:hover { color: var(--accent); }
 
   /* ── Screen panel ──────────────────────────────────────────────────── */
@@ -301,9 +317,10 @@
 
   /* ── UI/UX Enhancements ── */
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 3px solid var(--accent);
     outline-offset: 3px;
     border-radius: 4px;
+    box-shadow: 0 0 6px var(--accent);
   }
   :focus:not(:focus-visible) { outline: none; }
 
@@ -326,6 +343,11 @@
   .log-wrap::-webkit-scrollbar-track { background: transparent; }
   .log-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
   .log-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  @media (min-width: 1280px) and (hover: none) {
+    #qr-code-img { width: 220px !important; height: 220px !important; }
+    #lobby-log, #room-log { display: none !important; }
+  }
 
   * { touch-action: manipulation; }
 </style>
@@ -356,12 +378,12 @@
       <p>Send files of any size, chat securely, and share your screen. No cloud storage, no traces.</p>
     </div>
     <div class="lobby-cards">
-      <div class="lobby-card create-card" onclick="openCreateModal()">
+      <div class="lobby-card create-card" tabindex="0" onclick="openCreateModal()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openCreateModal(); }">
         <div class="card-icon">✦</div>
         <h3>Create room</h3>
         <p>Start a session and share your room code with someone.</p>
       </div>
-      <div class="lobby-card join-card" onclick="openJoinModal()">
+      <div class="lobby-card join-card" tabindex="0" onclick="openJoinModal()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openJoinModal(); }">
         <div class="card-icon">⇢</div>
         <h3>Join room</h3>
         <p>Enter a room code to connect with a peer instantly.</p>
@@ -375,7 +397,7 @@
     <div class="room-header">
       <div class="room-info">
         <span class="label">Room code</span>
-        <span class="code-badge" id="room-code-badge" onclick="copyRoomCode()" title="Click to copy room code">— <span style="font-size:.7rem;color:var(--muted)">copy</span></span>
+        <span class="code-badge" id="room-code-badge" tabindex="0" onclick="copyRoomCode()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); copyRoomCode(); }" title="Click to copy room code">— <span style="font-size:.7rem;color:var(--muted)">copy</span></span>
       </div>
       <div class="room-actions">
         <button class="icon-btn danger" onclick="leaveRoom()">✕ Leave</button>
@@ -383,14 +405,14 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-panel="files" onclick="switchTab(this)">📁 Files</button>
-      <button class="tab" data-panel="text"  onclick="switchTab(this)">📋 Text</button>
-      <button class="tab" data-panel="screen" onclick="switchTab(this)">🖥 Screen</button>
+      <button class="tab active" data-panel="files" tabindex="0" onclick="switchTab(this)">📁 Files</button>
+      <button class="tab" data-panel="text" tabindex="0" onclick="switchTab(this)">📋 Text</button>
+      <button class="tab" data-panel="screen" tabindex="0" onclick="switchTab(this)">🖥 Screen</button>
     </div>
 
     <!-- FILES -->
     <div class="tab-panel active" id="panel-files">
-      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="drop-zone" id="drop-zone" tabindex="0" onclick="document.getElementById('file-input').click()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); document.getElementById('file-input').click(); }">
         <div class="drop-icon">📦</div>
         <h3>Drop files here</h3>
         <p>or click to browse — any size, any type</p>
@@ -441,8 +463,8 @@
       <div class="hint">Click to copy</div>
     </div>
     <div class="qr-container" style="text-align: center; margin-top: 16px; display: none;" id="qr-container">
-      <img id="qr-code-img" src="" alt="QR Code" style="width: 140px; height: 140px; border-radius: 8px; border: 4px solid white;">
-      <div class="hint" style="margin-top: 8px; font-size: 0.75rem; color: var(--muted);">Scan with phone to join instantly</div>
+      <img id="qr-code-img" src="" alt="QR Code" style="width: 180px; height: 180px; border-radius: 8px; border: 4px solid white;">
+      <div class="hint" style="margin-top: 8px; font-size: 0.75rem; color: var(--muted);">📱 Scan with phone to join instantly</div>
     </div>
     <div id="local-warning-panel" style="display: none; margin-top: 16px; text-align: left; padding: 14px; background: rgba(255, 181, 71, 0.05); border: 1px solid rgba(255, 181, 71, 0.2); border-radius: var(--radius); transition: all 0.3s ease;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -526,7 +548,20 @@
 <div id="toast"></div>
 
 <script>
+const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 window.addEventListener('DOMContentLoaded', async () => {
+  if (IS_MOBILE) {
+    const screenTab = document.querySelector('[data-panel="screen"]');
+    if (screenTab) screenTab.innerHTML = "📷 Camera";
+    const shareBtn = document.getElementById("share-screen-btn");
+    if (shareBtn) shareBtn.textContent = "Share camera";
+    const ph = document.querySelector("#screen-placeholder p");
+    if (ph) ph.textContent = "No camera active";
+    const phIcon = document.querySelector("#screen-placeholder .big-icon");
+    if (phIcon) phIcon.textContent = "📷";
+  }
+
   const urlParams = new URLSearchParams(window.location.search);
   const roomParam = urlParams.get('room');
   if (roomParam) {
@@ -782,6 +817,7 @@ async function initPeerConnection() {
     const vid = document.getElementById("screen-video");
     vid.srcObject = e.streams[0];
     vid.style.display = "block";
+    vid.play().catch(() => {});
     document.getElementById("screen-placeholder").style.display = "none";
     log("Receiving screen share", "info");
   };
@@ -1011,13 +1047,16 @@ async function toggleScreenShare() {
   if (!STATE.connected) { toast("⚠ Not connected to a peer"); return; }
   if (!sharingScreen) {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      const stream = IS_MOBILE 
+        ? await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true })
+        : await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       STATE.screenStream = stream;
 
       // Show local preview
       const vid = document.getElementById("screen-video");
       vid.srcObject = stream;
       vid.style.display = "block";
+      vid.play().catch(() => {});
       document.getElementById("screen-placeholder").style.display = "none";
 
       // Add tracks to peer connection
@@ -1031,13 +1070,13 @@ async function toggleScreenShare() {
       sendSignal({ type: "offer", sdp: offer.sdp });
 
       sharingScreen = true;
-      document.getElementById("share-screen-btn").textContent = "Stop sharing";
+      document.getElementById("share-screen-btn").textContent = IS_MOBILE ? "Stop camera" : "Stop sharing";
       document.getElementById("share-screen-btn").className = "btn btn-danger";
 
       stream.getVideoTracks()[0].onended = () => stopScreenShare();
-      log("Screen sharing started", "info");
+      log((IS_MOBILE ? "Camera" : "Screen") + " sharing started", "info");
     } catch (err) {
-      log("Screen share cancelled or denied", "warn");
+      log("Media share cancelled or denied", "warn");
     }
   } else { stopScreenShare(); }
 }
@@ -1055,9 +1094,9 @@ function stopScreenShare() {
   vid.srcObject = null; vid.style.display = "none";
   document.getElementById("screen-placeholder").style.display = "";
   sharingScreen = false;
-  document.getElementById("share-screen-btn").textContent = "Share my screen";
+  document.getElementById("share-screen-btn").textContent = IS_MOBILE ? "Share camera" : "Share my screen";
   document.getElementById("share-screen-btn").className = "btn btn-primary";
-  log("Screen sharing stopped", "warn");
+  log((IS_MOBILE ? "Camera" : "Screen") + " sharing stopped", "warn");
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1197,6 +1236,34 @@ function resetNetworkSettings() {
   toast("⚙ WebRTC Config reset to default.");
   closeModal("modal-network");
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   VISIBILITY RECONNECTION
+══════════════════════════════════════════════════════════════════════ */
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState === "visible") {
+    log("App foregrounded. Checking connection state...", "info");
+    const wsDead = !STATE.ws || STATE.ws.readyState !== WebSocket.OPEN;
+    
+    // If WS dead, WebRTC not established
+    if (wsDead && !STATE.connected && STATE.roomCode) {
+      log("Reconnecting to lobby...", "warn");
+      try {
+        await connectWS();
+        sendSignal({ type: STATE.isInitiator ? "create" : "join", roomCode: STATE.roomCode });
+      } catch (err) { log("Reconnection failed", "error"); }
+    }
+    // If WS dead, WebRTC was connected but PC is disconnected/failed
+    else if (wsDead && STATE.connected && STATE.pc && (STATE.pc.connectionState === "disconnected" || STATE.pc.connectionState === "failed")) {
+      log("Connection dropped in background. Attempting full renegotiation...", "warn");
+      if (STATE.pc) { STATE.pc.close(); STATE.pc = null; }
+      try {
+        await connectWS();
+        sendSignal({ type: STATE.isInitiator ? "create" : "join", roomCode: STATE.roomCode });
+      } catch (err) { log("Reconnection failed", "error"); }
+    }
+  }
+});
 </script>
 </body>
 </html>
