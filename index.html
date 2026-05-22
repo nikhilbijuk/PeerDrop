@@ -586,8 +586,17 @@ const STATE = {
   connected: false,
 };
 
-// Change this to your server URL if hosted remotely
-const WS_URL = `wss://peerdrop-production-7711.up.railway.app`;
+const IS_LOCAL_HOST = window.location.hostname === "localhost" || 
+                      window.location.hostname === "127.0.0.1" || 
+                      window.location.hostname.startsWith("192.168.") || 
+                      window.location.hostname.startsWith("10.") ||
+                      window.location.hostname.startsWith("172.");
+
+// If running locally, connect to local signaling server on port 3000
+// Otherwise, fallback to the public production server
+const WS_URL = (IS_LOCAL_HOST && window.location.protocol !== "file:")
+  ? `ws://${window.location.hostname}:3000`
+  : `wss://peerdrop-production-7711.up.railway.app`;
 
 /* ══════════════════════════════════════════════════════════════════════
    LOGGING
