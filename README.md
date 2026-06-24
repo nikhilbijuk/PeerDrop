@@ -7,14 +7,36 @@ No cloud storage. No data passes through any server once peers are connected.
 
 ## How it works
 
-```
-Peer A  ──┐                        ┌── Peer B
-           │  WebSocket (signaling) │
-           └──── Signaling Server ──┘
-                 (only for setup)
+PeerDrop uses WebRTC to establish a direct, peer-to-peer data channel. A signaling server is temporarily used to negotiate the connection.
 
-Peer A  ────────── WebRTC ──────────── Peer B
-           (direct peer-to-peer data)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor PeerA as Peer A (PC)
+    actor PeerB as Peer B (Phone)
+    participant Server as Signaling Server (Node.js)
+    participant STUN as STUN Server (Google)
+
+    Note over PeerA, PeerB: 1. Signaling Phase
+    PeerA->>Server: Create Room (Register Session)
+    Server-->>PeerA: Return Room Code
+    PeerB->>Server: Join Room (Provide Code)
+    
+    Note over PeerA, PeerB: 2. NAT Traversal Phase
+    PeerA->>STUN: Request Public IP/Port (ICE Candidates)
+    STUN-->>PeerA: Return Public Endpoint Details
+    PeerB->>STUN: Request Public IP/Port (ICE Candidates)
+    STUN-->>PeerB: Return Public Endpoint Details
+
+    Note over PeerA, PeerB: 3. Handshake Exchange
+    PeerA->>Server: Send SDP Offer + ICE Candidates
+    Server->>PeerB: Forward SDP Offer + ICE Candidates
+    PeerB->>Server: Send SDP Answer + ICE Candidates
+    Server->>PeerA: Forward SDP Answer + ICE Candidates
+
+    Note over PeerA, PeerB: 4. Direct P2P Channel Established
+    Server->>Server: Disconnects from active session routing
+    PeerA->>PeerB: Direct Encrypted WebRTC Data Channel (64KB chunks)
 ```
 
 The signaling server only helps peers *find each other* via a room code.
@@ -62,6 +84,23 @@ Open `index.html` in your browser. Both peers need access to it.
 
 ---
 
+## Flow Control Mechanism
+
+To prevent flooding the browser's memory buffer during large file transfers, PeerDrop implements backpressure tracking:
+- **Buffer Threshold**: Monitors `RTCDataChannel.bufferedAmount`.
+- **Throttling**: If the buffer exceeds 16 MB (`16777216` bytes), the reader pauses chunking.
+- **Resumption**: Listens for the `bufferedamountlow` event to resume streaming the next array buffer chunks safely.
+
+---
+
+## 🔒 Security & Context Requirements
+
+- **Localhost Development**: WebRTC and Web Crypto APIs operate without restrictions on `http://localhost`.
+- **LAN / Network Testing**: Accessing the app via a local IP (e.g., `http://192.168.1.X`) allows Data Channels to connect, but modern browsers will block access to `getDisplayMedia` (Screen Sharing) unless a secure HTTPS origin context is provided.
+- **Production Deployment**: Must be hosted behind a secure `https://` origin (with a corresponding `wss://` signaling endpoint) for all sharing protocols to function properly on mobile devices.
+
+---
+
 ## Deploying to production
 
 ### Signaling server
@@ -83,6 +122,17 @@ Then host `index.html` on any static host (Netlify, Vercel, GitHub Pages, Cloudf
 
 ---
 
+## Architecture Roadmap & Improvements
+
+To achieve seamless connectivity across all network configurations (including mobile data and strict NATs), the following improvements are prioritized:
+
+1. **TURN Server Integration**: Deploying a TURN server (e.g., `coturn`) is the single biggest improvement for real-world reliability, allowing connections when direct P2P fails (e.g., across CGNAT).
+2. **Local Signaling Fallback**: Allowing the application to fall back to a local WebSocket server so it works on LAN even without an internet connection.
+3. **Relay Fallback**: Implementing a temporary relay storage mechanism if ICE state fails completely.
+4. **Device Discovery**: Adding mDNS or broadcast beacons for auto-discovery on LAN instead of relying solely on manual room codes.
+
+---
+
 ## Tech stack
 
 | Piece | Technology |
@@ -99,4 +149,4 @@ Then host `index.html` on any static host (Netlify, Vercel, GitHub Pages, Cloudf
 - **Max 2 peers per room** (full mesh; expand for groups)
 - File transfers use 64 KB chunks with flow control
 - STUN servers from Google are used for NAT traversal (free, no signup)
-- For users behind strict corporate firewalls, add a TURN server to `ICE_SERVERS`
+- For users behind strict corporate firewalls, configure custom TURN credentials in the settings.

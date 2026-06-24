@@ -2,422 +2,277 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PeerDrop — P2P Share</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>PeerDrop — Share Files Instantly</title>
 <link rel="manifest" href="./manifest.json"/>
-<meta name="theme-color" content="#0a0a0f"/>
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-  /* ── Reset & Base ──────────────────────────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg:        #0a0a0f;
-    --bg2:       #111118;
-    --bg3:       #18181f;
-    --border:    #2a2a35;
-    --border2:   #3a3a48;
-    --accent:    #00e5c8;
-    --accent2:   #7c5cff;
-    --accent3:   #ff5c8a;
-    --text:      #eeeef3;
-    --muted:     #7878a0;
-    --card:      rgba(255,255,255,0.03);
-    --card-h:    rgba(255,255,255,0.06);
-    --radius:    14px;
-    --font:      'Syne', sans-serif;
-    --mono:      'DM Mono', monospace;
+    --bg: #FFFFFF;
+    --card: #F8F9FA;
+    --text: #111111;
+    --secondary: #666666;
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --border: #E5E7EB;
+    --border-hover: #D1D5DB;
+    --danger: #DC2626;
+    --success: #16A34A;
+    --warning: #CA8A04;
+    --radius: 16px;
+    --font: 'Inter', sans-serif;
   }
 
-  html { font-size: 16px; }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121212;
+      --card: #1E1E1E;
+      --text: #FFFFFF;
+      --secondary: #BBBBBB;
+      --primary: #60A5FA;
+      --primary-hover: #3B82F6;
+      --border: #333333;
+      --border-hover: #444444;
+      --danger: #EF4444;
+      --success: #22C55E;
+      --warning: #EAB308;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--font);
     min-height: 100vh;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Noise texture overlay ─────────────────────────────────────────── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 9999;
-    opacity: .4;
+  /* Layout */
+  .app { max-width: 800px; margin: 0 auto; padding: 24px 20px 100px; }
+  
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
+  .logo { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+  .advanced-btn { 
+    background: transparent; border: none; color: var(--secondary); font-size: 0.9rem; 
+    font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px; border-radius: 8px; font-family: var(--font);
   }
+  .advanced-btn:hover { background: var(--card); color: var(--text); }
 
-  /* ── Animated gradient orbs ────────────────────────────────────────── */
-  .orb {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: .18;
-    pointer-events: none;
-    z-index: 0;
-    animation: drift 14s ease-in-out infinite alternate;
-  }
-  .orb-1 { width: 600px; height: 600px; background: var(--accent2); top: -200px; left: -200px; animation-duration: 18s; }
-  .orb-2 { width: 400px; height: 400px; background: var(--accent);  bottom: -100px; right: -100px; animation-duration: 12s; }
-  .orb-3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 40%; animation-duration: 22s; }
-  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,30px) scale(1.1); } }
+  /* Typography */
+  h1 { font-size: 2.2rem; font-weight: 700; line-height: 1.2; margin-bottom: 16px; text-align: center; }
+  p.subtitle { color: var(--secondary); text-align: center; margin-bottom: 40px; font-size: 1.05rem; }
 
-  /* ── Layout ────────────────────────────────────────────────────────── */
-  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
-
-  /* ── Header ────────────────────────────────────────────────────────── */
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 56px; }
-  .logo {
-    font-size: 1.4rem; font-weight: 800; letter-spacing: -.02em;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  }
-  .logo span { color: var(--accent3); -webkit-text-fill-color: var(--accent3); }
-  .status-pill {
-    display: flex; align-items: center; gap: 7px;
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 999px; padding: 6px 14px;
-    font-size: .72rem; font-family: var(--mono); letter-spacing: .04em; color: var(--muted);
-    transition: all .3s;
-  }
-  .status-dot {
-    width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
-    transition: background .4s;
-  }
-  .status-pill.connected { border-color: var(--accent); color: var(--accent); }
-  .status-pill.connected .status-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse-dot 2s ease infinite; }
-  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
-
-  /* ── Lobby ─────────────────────────────────────────────────────────── */
-  #lobby { display: flex; flex-direction: column; align-items: center; gap: 20px; padding-top: 20px; }
-  .hero-text { text-align: center; margin-bottom: 12px; }
-  .hero-text h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
-  .hero-text h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .hero-text p { color: var(--muted); font-size: .95rem; margin-top: 12px; }
-
-  .lobby-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 560px; }
-  @media (max-width: 520px) { .lobby-cards { grid-template-columns: 1fr; } }
-
-  .lobby-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 28px 24px;
-    cursor: pointer;
-    transition: all .25s;
-    position: relative; overflow: hidden;
-  }
-  .lobby-card::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.02));
-    transition: opacity .3s;
-  }
-  .lobby-card:hover { border-color: var(--border2); background: var(--card-h); transform: translateY(-2px); }
-  .lobby-card:hover::before { opacity: 0; }
-  .lobby-card .card-icon { font-size: 2rem; margin-bottom: 14px; }
-  .lobby-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
-  .lobby-card p { font-size: .8rem; color: var(--muted); line-height: 1.5; }
-  .lobby-card.create-card { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
-  .lobby-card.create-card:hover { border-color: var(--accent); box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 15%, transparent); }
-  .lobby-card.join-card { border-color: color-mix(in srgb, var(--accent2) 30%, transparent); }
-  .lobby-card.join-card:hover { border-color: var(--accent2); box-shadow: 0 0 24px color-mix(in srgb, var(--accent2) 15%, transparent); }
-
-  /* ── Modals ────────────────────────────────────────────────────────── */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.7); backdrop-filter: blur(8px);
-    z-index: 200; align-items: center; justify-content: center;
-    padding: 20px;
-  }
-  .modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  .modal {
-    background: var(--bg2); border: 1px solid var(--border2);
-    border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 420px;
-    animation: slideUp .25s ease;
-  }
-  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  .modal h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
-  .modal p { color: var(--muted); font-size: .85rem; margin-bottom: 24px; line-height: 1.5; }
-  .room-code-display {
-    text-align: center; padding: 18px; background: var(--bg3);
-    border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px;
-  }
-  .room-code-display .code {
-    font-family: var(--mono); font-size: 2rem; font-weight: 500; letter-spacing: .1em;
-    color: var(--accent); cursor: pointer;
-  }
-  .room-code-display .hint { font-size: .72rem; color: var(--muted); margin-top: 6px; }
-  input[type="text"] {
-    width: 100%; background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 8px; padding: 12px 16px; color: var(--text); font-family: var(--mono);
-    font-size: 1rem; letter-spacing: .08em; text-transform: uppercase;
-    outline: none; transition: border-color .2s;
-    min-height: 48px;
-  }
-  input[type="text"]::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
-  input[type="text"]:focus { border-color: var(--accent2); }
+  /* Buttons & Inputs */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 12px 24px; border-radius: 8px; font-family: var(--font); font-weight: 700;
-    font-size: .9rem; cursor: pointer; border: none; transition: all .2s; width: 100%;
-    min-height: 48px;
+    padding: 0 24px; border-radius: 12px; font-family: var(--font); font-weight: 600;
+    font-size: 1rem; cursor: pointer; border: none; transition: all 0.2s; width: 100%;
+    min-height: 52px; text-decoration: none;
   }
-  .btn-primary { background: var(--accent); color: #000; }
-  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-  .btn-secondary { background: var(--accent2); color: #fff; }
-  .btn-secondary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-  .btn-ghost { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); margin-top: 10px; }
-  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
-  .btn-danger { background: var(--accent3); color: #fff; }
-  .waiting-indicator { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: .85rem; margin: 16px 0; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  @media (prefers-color-scheme: dark) { .btn-primary { color: #000; } }
+  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--border-hover); background: var(--border); }
+  .btn-danger { background: var(--danger); color: #fff; }
 
-  /* ── Connected Room ────────────────────────────────────────────────── */
-  #room { display: none; }
-  .room-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+  input[type="text"], textarea {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; color: var(--text); font-family: var(--font);
+    font-size: 1.1rem; outline: none; transition: border-color 0.2s; min-height: 52px;
   }
-  .room-info { display: flex; flex-direction: column; gap: 4px; }
-  .room-info .label { font-size: .72rem; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; }
-  .room-info .code-badge {
-    font-family: var(--mono); font-size: 1.1rem; color: var(--accent); letter-spacing: .08em;
-    cursor: pointer; display: flex; align-items: center; gap: 6px;
-  }
-  .room-actions { display: flex; gap: 10px; }
-  .icon-btn {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 14px; font-family: var(--font); font-size: .8rem;
-    font-weight: 600; color: var(--muted); cursor: pointer; transition: all .2s;
-    min-height: 48px;
-  }
-  .icon-btn:hover { border-color: var(--border2); color: var(--text); }
-  .icon-btn.danger:hover { border-color: var(--accent3); color: var(--accent3); }
-  .icon-btn.active { border-color: var(--accent3); color: var(--accent3); background: color-mix(in srgb, var(--accent3) 10%, transparent); }
+  input[type="text"]:focus, textarea:focus { border-color: var(--primary); }
+  textarea { resize: vertical; min-height: 120px; }
 
-  /* ── Tabs ──────────────────────────────────────────────────────────── */
-  .tabs { display: flex; gap: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 20px; }
-  .tab {
-    flex: 1; padding: 9px 12px; border-radius: 7px; font-family: var(--font); font-weight: 600;
-    font-size: .82rem; cursor: pointer; border: none; background: transparent; color: var(--muted);
-    transition: all .2s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
-    min-height: 48px;
+  /* Lobby */
+  .lobby-actions { display: flex; flex-direction: column; gap: 16px; max-width: 400px; margin: 0 auto; }
+  .lobby-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;
   }
-  .tab.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .lobby-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+  .lobby-card h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 4px; }
+  .lobby-card p { color: var(--secondary); font-size: 0.9rem; }
 
-  /* ── Tab panels ────────────────────────────────────────────────────── */
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; animation: fadeIn .15s ease; }
-
-  /* ── File drop zone ────────────────────────────────────────────────── */
-  .drop-zone {
-    border: 2px dashed var(--border2); border-radius: var(--radius); padding: 48px 24px;
-    text-align: center; cursor: pointer; transition: all .25s; position: relative;
-    background: var(--card);
+  /* Modals */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+    backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center;
+    padding: 20px;
   }
-  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent); }
-  .drop-zone .drop-icon { font-size: 2.5rem; margin-bottom: 12px; }
-  .drop-zone h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-  .drop-zone p { font-size: .8rem; color: var(--muted); }
+  .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 24px;
+    padding: 32px; width: 100%; max-width: 400px; animation: slideUp 0.25s ease;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  }
+  @media (prefers-color-scheme: dark) { .modal { box-shadow: 0 10px 40px rgba(0,0,0,0.5); } }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; text-align: center; }
+  .modal p { color: var(--secondary); font-size: 0.95rem; margin-bottom: 24px; text-align: center; line-height: 1.5; }
+
+  .qr-wrapper { text-align: center; margin-bottom: 24px; display: none; }
+  .qr-wrapper img { width: 200px; height: 200px; border-radius: 12px; padding: 8px; background: #fff; }
   
-  @media (hover: none) and (pointer: coarse) {
-    .drop-zone h3 { display: none; }
-    .drop-zone::after {
-      content: "Tap to browse files";
-      display: inline-flex; align-items: center; justify-content: center;
-      background: var(--accent); color: #000; padding: 12px 24px;
-      border-radius: 8px; font-weight: 700; font-size: .9rem;
-      margin-top: 10px; min-height: 48px;
-    }
+  .code-display {
+    text-align: center; font-size: 2.5rem; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--primary); margin-bottom: 24px; user-select: all;
   }
+
+  .advanced-options { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+  .advanced-options label { font-size: 0.85rem; font-weight: 600; color: var(--secondary); margin-bottom: 6px; display: block; }
+  .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text); font-size: 0.95rem; }
+
+  /* Local Network Warning */
+  .local-warning {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 24px; text-align: left; display: none;
+  }
+  .local-warning h4 { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.95rem; }
+  .local-warning summary { color: var(--primary); font-size: 0.9rem; cursor: pointer; font-weight: 500; margin-top: 8px; }
+  .local-warning .details { font-size: 0.85rem; color: var(--secondary); margin-top: 8px; line-height: 1.5; }
+  .local-warning input { min-height: 40px; font-size: 0.9rem; padding: 8px 12px; margin-top: 8px; }
+
+  /* Connected State */
+  #room { display: none; }
+  .status-header { text-align: center; margin-bottom: 32px; }
+  .status-indicator {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 1.2rem; font-weight: 600;
+    padding: 12px 24px; background: var(--card); border-radius: 999px; border: 1px solid var(--border);
+  }
+  .peer-name { display: block; font-size: 0.9rem; color: var(--secondary); margin-top: 8px; }
+  
+  /* Tabs - Desktop */
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+  .tab {
+    flex: 1; padding: 12px; border-radius: 12px; font-family: var(--font); font-weight: 600;
+    font-size: 0.95rem; cursor: pointer; border: none; background: transparent; color: var(--secondary);
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 52px;
+  }
+  .tab.active { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .tab:hover:not(.active) { background: var(--card); }
+
+  /* Tabs - Mobile Bottom Nav */
+  @media (max-width: 600px) {
+    .tabs {
+      position: fixed; bottom: 0; left: 0; right: 0; margin: 0;
+      background: var(--bg); border-top: 1px solid var(--border); padding: 8px 16px 24px;
+      gap: 4px; z-index: 100;
+    }
+    .tab { flex-direction: column; gap: 4px; font-size: 0.75rem; min-height: 60px; padding: 8px; }
+    .tab.active { background: var(--card); border-color: transparent; }
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
+
+  /* Files */
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius); padding: 60px 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: var(--card);
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, transparent); }
+  .drop-zone h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+  .drop-zone p { font-size: 0.9rem; color: var(--secondary); }
   #file-input { display: none; }
 
-  /* ── Transfer list ─────────────────────────────────────────────────── */
-  .transfers { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .transfers { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
   .transfer-item {
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
-    padding: 14px 16px; display: flex; align-items: center; gap: 14px;
-    animation: slideUp .2s ease;
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; display: flex; flex-direction: column; gap: 12px;
   }
-  .transfer-icon { font-size: 1.5rem; flex-shrink: 0; }
-  .transfer-info { flex: 1; min-width: 0; }
-  .transfer-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .transfer-meta { font-size: .72rem; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
-  .progress-bar { height: 4px; background: var(--border); border-radius: 999px; margin-top: 8px; overflow: hidden; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; transition: width .2s; }
-  .transfer-action { flex-shrink: 0; }
-  .dl-btn {
-    background: var(--accent); color: #000; border: none; border-radius: 6px;
-    padding: 7px 14px; font-family: var(--font); font-weight: 700; font-size: .78rem;
-    cursor: pointer; transition: all .2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
-    min-height: 48px;
-  }
-  .dl-btn:hover { filter: brightness(1.1); }
+  .transfer-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .transfer-name { font-weight: 600; font-size: 1rem; word-break: break-all; margin-bottom: 4px; }
+  .transfer-pct { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
+  .transfer-stats { font-size: 0.85rem; color: var(--secondary); display: flex; justify-content: space-between; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s linear; }
 
-  /* ── Text panel ────────────────────────────────────────────────────── */
-  .text-area-wrap { position: relative; }
-  textarea {
-    width: 100%; background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 10px; padding: 16px; color: var(--text); font-family: var(--mono);
-    font-size: .88rem; resize: vertical; min-height: 140px; outline: none;
-    transition: border-color .2s; line-height: 1.6;
-  }
-  textarea:focus { border-color: var(--accent2); }
-  .text-actions { display: flex; gap: 10px; margin-top: 12px; }
-  .text-actions .btn { flex: 1; }
-  .received-texts { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+  /* Text & Messages */
+  .text-actions { display: flex; gap: 12px; margin-top: 16px; }
+  .received-texts { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
   .received-bubble {
-    background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
-    border-radius: 0 10px 10px 0; padding: 12px 16px; font-family: var(--mono); font-size: .85rem;
-    line-height: 1.6; white-space: pre-wrap; word-break: break-word; animation: slideUp .2s ease;
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
   }
-  .received-bubble .bubble-meta { font-size: .68rem; color: var(--muted); margin-bottom: 6px; }
-  .bubble-copy { float: right; background: none; border: none; color: var(--muted); cursor: pointer; font-size: .8rem; transition: color .2s; min-height: 48px; padding: 0 8px; }
-  .bubble-copy:hover { color: var(--accent); }
+  .bubble-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--secondary); margin-bottom: 8px; }
+  .bubble-copy { background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600; font-size: 0.8rem; }
 
-  /* ── Screen panel ──────────────────────────────────────────────────── */
-  .screen-section { display: flex; flex-direction: column; gap: 14px; }
+  /* Screen */
   .screen-preview {
-    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
-    aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center;
-    position: relative; overflow: hidden;
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 16px;
   }
   .screen-preview video { width: 100%; height: 100%; object-fit: contain; display: none; }
-  .screen-placeholder { text-align: center; color: var(--muted); }
-  .screen-placeholder .big-icon { font-size: 3rem; margin-bottom: 12px; }
-  .screen-placeholder p { font-size: .85rem; }
-  .screen-btns { display: flex; gap: 10px; }
-  .screen-btns .btn { flex: 1; }
+  .screen-placeholder { text-align: center; color: var(--secondary); font-size: 0.95rem; }
 
-  /* ── Chat / log ────────────────────────────────────────────────────── */
-  .log-wrap {
-    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
-    height: 140px; overflow-y: auto; padding: 12px 14px;
-    scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
-    margin-top: 20px;
-  }
-  .log-line { font-family: var(--mono); font-size: .72rem; color: var(--muted); line-height: 1.7; }
-  .log-line.info  { color: var(--accent); }
-  .log-line.error { color: var(--accent3); }
-  .log-line.warn  { color: #ffb547; }
-
-  /* ── Toast ─────────────────────────────────────────────────────────── */
+  /* Toast & Logs */
   #toast {
-    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
-    background: var(--bg2); border: 1px solid var(--border2); border-radius: 999px;
-    padding: 10px 22px; font-size: .85rem; font-weight: 600;
-    box-shadow: 0 4px 24px rgba(0,0,0,.5); z-index: 300;
-    transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--text); color: var(--bg); border-radius: 999px;
+    padding: 12px 24px; font-size: 0.95rem; font-weight: 600; opacity: 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 300; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
   }
-  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-  /* ── UI/UX Enhancements ── */
-  :focus-visible {
-    outline: 3px solid var(--accent);
-    outline-offset: 3px;
-    border-radius: 4px;
-    box-shadow: 0 0 6px var(--accent);
+  .log-wrap {
+    display: none; background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    height: 150px; overflow-y: auto; padding: 12px; margin-top: 24px; font-family: monospace; font-size: 0.75rem;
   }
-  :focus:not(:focus-visible) { outline: none; }
-
-  .lobby-card, .tab, .icon-btn, .bubble-copy, .dl-btn, .code-badge, .drop-zone { cursor: pointer; }
-  textarea, input[type="text"] { cursor: text; }
-
-  .tab:not(.active):hover {
-    color: var(--text);
-    background: rgba(255,255,255,0.04);
-  }
-
-  .drop-zone.dragover {
-    box-shadow: 0 0 0 3px var(--accent), 0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
-  }
-
-  .btn:active { transform: translateY(1px); filter: brightness(0.95); }
-  .icon-btn:active { transform: translateY(1px); }
-
-  .log-wrap::-webkit-scrollbar { width: 5px; }
-  .log-wrap::-webkit-scrollbar-track { background: transparent; }
-  .log-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
-  .log-wrap::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-
-  @media (min-width: 1280px) and (hover: none) {
-    #qr-code-img { width: 220px !important; height: 220px !important; }
-    #lobby-log, #room-log { display: none !important; }
-  }
-
-  * { touch-action: manipulation; }
+  .log-wrap.show { display: block; }
+  .log-line { color: var(--secondary); margin-bottom: 4px; }
+  .log-line.error { color: var(--danger); }
+  .log-line.warn { color: var(--warning); }
 </style>
 </head>
 <body>
 
-<!-- Ambient orbs -->
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="orb orb-3"></div>
-
 <div class="app">
   <header>
-    <div class="logo">Peer<span>Drop</span></div>
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <button class="icon-btn" onclick="openNetworkSettings()" style="padding: 6px 10px; font-size: 0.72rem;" title="WebRTC STUN/TURN Settings">⚙ Config</button>
-      <div class="status-pill" id="status-pill">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="status-text">NOT CONNECTED</span>
-      </div>
-    </div>
+    <div class="logo">PeerDrop</div>
+    <button class="advanced-btn" onclick="openAdvancedModal()">⚙️ Advanced</button>
   </header>
 
-  <!-- ── LOBBY ─────────────────────────────────────────────────────── -->
+  <!-- LOBBY -->
   <div id="lobby">
-    <div class="hero-text">
-      <h1>Fast, private sharing<br/><em>directly between browsers.</em></h1>
-      <p>Send files of any size, chat securely, and share your screen. No cloud storage, no traces.</p>
+    <h1>PeerDrop lets you securely send files, messages, and your screen directly between devices without uploading them to the cloud.</h1>
+    <p class="subtitle">Fast, private, and works anywhere.</p>
+
+    <div class="lobby-actions">
+      <button class="btn btn-primary" onclick="openSendModal()">Start Sharing</button>
+      <button class="btn btn-secondary" onclick="openReceiveModal()">Join a Device</button>
     </div>
-    <div class="lobby-cards">
-      <div class="lobby-card create-card" tabindex="0" onclick="openCreateModal()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openCreateModal(); }">
-        <div class="card-icon">✦</div>
-        <h3>Create room</h3>
-        <p>Start a session and share your room code with someone.</p>
-      </div>
-      <div class="lobby-card join-card" tabindex="0" onclick="openJoinModal()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); openJoinModal(); }">
-        <div class="card-icon">⇢</div>
-        <h3>Join room</h3>
-        <p>Enter a room code to connect with a peer instantly.</p>
-      </div>
-    </div>
-    <div class="log-wrap" id="lobby-log" style="width:100%;max-width:560px;margin-top:8px;"></div>
   </div>
 
-  <!-- ── ROOM ──────────────────────────────────────────────────────── -->
+  <!-- ROOM -->
   <div id="room">
-    <div class="room-header">
-      <div class="room-info">
-        <span class="label">Room code</span>
-        <span class="code-badge" id="room-code-badge" tabindex="0" onclick="copyRoomCode()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); copyRoomCode(); }" title="Click to copy room code">— <span style="font-size:.7rem;color:var(--muted)">copy</span></span>
+    <div class="status-header">
+      <div class="status-indicator" id="status-indicator">
+        <span id="status-icon">🟡</span> <span id="status-text">Preparing connection...</span>
       </div>
-      <div class="room-actions">
-        <button class="icon-btn danger" onclick="leaveRoom()">✕ Leave</button>
-      </div>
+      <div class="peer-name" id="peer-name-display"></div>
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-panel="files" tabindex="0" onclick="switchTab(this)">📁 Files</button>
-      <button class="tab" data-panel="text" tabindex="0" onclick="switchTab(this)">📋 Text</button>
-      <button class="tab" data-panel="screen" tabindex="0" onclick="switchTab(this)">🖥 Screen</button>
+      <button class="tab active" data-panel="files" onclick="switchTab(this)">📁 Files</button>
+      <button class="tab" data-panel="text" onclick="switchTab(this)">💬 Messages</button>
+      <button class="tab" data-panel="screen" onclick="switchTab(this)">🖥 Share Screen</button>
     </div>
 
     <!-- FILES -->
     <div class="tab-panel active" id="panel-files">
-      <div class="drop-zone" id="drop-zone" tabindex="0" onclick="document.getElementById('file-input').click()" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); document.getElementById('file-input').click(); }">
-        <div class="drop-icon">📦</div>
-        <h3>Drop files here</h3>
-        <p>or click to browse — any size, any type</p>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <h3>Select or drop files to send</h3>
+        <p>Any size, any format.</p>
       </div>
       <input type="file" id="file-input" multiple/>
       <div class="transfers" id="transfers"></div>
@@ -425,156 +280,106 @@
 
     <!-- TEXT -->
     <div class="tab-panel" id="panel-text">
-      <div class="text-area-wrap">
-        <textarea id="text-input" placeholder="Type or paste anything… (Ctrl+Enter to send)"></textarea>
-      </div>
+      <textarea id="text-input" placeholder="Type a message or paste a link..."></textarea>
       <div class="text-actions">
-        <button class="btn btn-secondary" onclick="sendText()">Send →</button>
-        <button class="btn btn-ghost" onclick="clearText()">Clear</button>
+        <button class="btn btn-primary" onclick="sendText()">Send Message</button>
       </div>
       <div class="received-texts" id="received-texts"></div>
     </div>
 
     <!-- SCREEN -->
     <div class="tab-panel" id="panel-screen">
-      <div class="screen-section">
-        <div class="screen-preview" id="screen-preview">
-          <video id="screen-video" autoplay playsinline></video>
-          <div class="screen-placeholder" id="screen-placeholder">
-            <div class="big-icon">🖥</div>
-            <p>No stream active</p>
-          </div>
-        </div>
-        <div class="screen-btns">
-          <button class="btn btn-primary" id="share-screen-btn" onclick="toggleScreenShare()">Share my screen</button>
-        </div>
+      <div class="screen-preview" id="screen-preview">
+        <video id="screen-video" autoplay playsinline></video>
+        <div class="screen-placeholder" id="screen-placeholder">No screen shared yet</div>
       </div>
+      <button class="btn btn-primary" id="share-screen-btn" onclick="toggleScreenShare()">Share My Screen</button>
     </div>
 
-    <div class="log-wrap" id="room-log" style="margin-top:20px;"></div>
+    <div class="log-wrap" id="room-log"></div>
   </div>
 </div>
 
-<!-- ── MODALS ──────────────────────────────────────────────────────────── -->
-<div class="modal-overlay" id="modal-create">
+<!-- MODALS -->
+
+<!-- Send / Start Sharing Modal -->
+<div class="modal-overlay" id="modal-send">
   <div class="modal">
-    <h2>Create a new connection</h2>
-    <p>Share this secret code with your peer. Once they enter it, you'll be connected directly. We never see or store your files.</p>
-    <div class="room-code-display" id="create-code-display">
-      <div class="code" id="create-room-code" onclick="copyRoomCode()" title="Click to copy">—</div>
-      <div class="hint">Click to copy</div>
+    <h2>Ready to Connect</h2>
+    <p>Scan this QR code with your other device or enter the code below.</p>
+    
+    <div class="qr-wrapper" id="qr-container">
+      <img id="qr-code-img" src="" alt="QR Code">
     </div>
-    <div class="qr-container" style="text-align: center; margin-top: 16px; display: none;" id="qr-container">
-      <img id="qr-code-img" src="" alt="QR Code" style="width: 180px; height: 180px; border-radius: 8px; border: 4px solid white;">
-      <div class="hint" style="margin-top: 8px; font-size: 0.75rem; color: var(--muted);">📱 Scan with phone to join instantly</div>
-    </div>
-    <div id="local-warning-panel" style="display: none; margin-top: 16px; text-align: left; padding: 14px; background: rgba(255, 181, 71, 0.05); border: 1px solid rgba(255, 181, 71, 0.2); border-radius: var(--radius); transition: all 0.3s ease;">
-      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-        <span style="color: #ffb547; font-size: 1.1rem;">⚠</span>
-        <strong style="color: #ffb547; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Local Setup Warning</strong>
-      </div>
-      <p style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; line-height: 1.4;">
-        Scanning this QR code on a mobile device won't work because the app is running locally. To connect a mobile device:
-      </p>
-      <details style="margin-bottom: 12px;">
-        <summary style="font-size: 0.72rem; color: var(--accent); cursor: pointer; user-select: none; font-weight: 600;">
-          How to connect over Wi-Fi?
-        </summary>
-        <div style="font-size: 0.72rem; color: var(--muted); padding: 8px 0 0 8px; line-height: 1.4; border-left: 2px solid var(--border);">
-          1. Connect both devices to the <strong>same Wi-Fi network</strong>.<br>
-          2. Find your PC's local IP (e.g., <code>192.168.1.50</code>).<br>
-          3. Serve this folder (e.g. via Live Server on port 5500).<br>
-          4. Enter that URL below (e.g., <code>http://192.168.1.50:5500</code>).
+
+    <div class="code-display" id="share-code-display">----</div>
+
+    <div class="local-warning" id="local-warning">
+      <h4>📶 Using this on another device?</h4>
+      <details>
+        <summary>Need help connecting?</summary>
+        <div class="details">
+          Ensure both devices are on the same Wi-Fi. Enter your computer's local address below to generate the correct QR code:
+          <input type="text" id="custom-base-url" placeholder="e.g. http://192.168.1.50:3000">
+          <button class="btn btn-secondary" style="margin-top:8px; min-height: 40px;" onclick="applyCustomBaseUrl()">Update QR Code</button>
         </div>
       </details>
-      <div style="display: flex; flex-direction: column; gap: 6px;">
-        <label for="custom-base-url" style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">Custom Base URL / IP Address</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="custom-base-url" placeholder="e.g. http://192.168.1.50:5500" style="font-size: 0.8rem; padding: 8px 12px; height: 36px; flex: 1;" onkeydown="if(event.key==='Enter') applyCustomBaseUrl()">
-          <button class="btn btn-secondary" style="width: auto; height: 36px; padding: 0 16px; font-size: 0.8rem;" onclick="applyCustomBaseUrl()">Apply</button>
-        </div>
-        <div style="font-size: 0.65rem; color: var(--muted); margin-top: 4px;" id="qr-preview-url-text"></div>
-      </div>
     </div>
-    <div class="waiting-indicator" id="waiting-indicator">
-      <div class="spinner"></div>
-      Waiting for peer to join…
-    </div>
-    <button class="btn btn-ghost" onclick="closeModal('modal-create'); leaveRoom()">Cancel</button>
+
+    <button class="btn btn-secondary" onclick="closeModal('modal-send'); leaveRoom()">Cancel</button>
   </div>
 </div>
 
-<div class="modal-overlay" id="modal-join">
+<!-- Receive / Join Modal -->
+<div class="modal-overlay" id="modal-receive">
   <div class="modal">
-    <h2>Join your peer</h2>
-    <p>Enter the secret code your peer shared with you to securely connect.</p>
-    <input type="text" id="join-code-input" maxlength="9" placeholder="e.g. FIRE-1234" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter') joinRoom()"/>
-    <br/><br/>
-    <button class="btn btn-secondary" id="join-btn" onclick="joinRoom()">Connect →</button>
-    <button class="btn btn-ghost" onclick="closeModal('modal-join')">Cancel</button>
+    <h2>Receive Files</h2>
+    <p>Enter the connection code shown on the other device.</p>
+    <input type="text" id="join-code-input" maxlength="9" placeholder="e.g. FIRE-1234" oninput="this.value=this.value.toUpperCase()" style="text-align: center; margin-bottom: 24px; font-weight: 700; font-size: 1.5rem; letter-spacing: 0.1em;"/>
+    <button class="btn btn-primary" id="join-btn" onclick="joinRoom()" style="margin-bottom: 12px;">Connect</button>
+    <button class="btn btn-secondary" onclick="closeModal('modal-receive')">Cancel</button>
   </div>
 </div>
 
-<div class="modal-overlay" id="modal-network">
-  <div class="modal" style="max-width: 440px;">
-    <h2>WebRTC Config (STUN/TURN)</h2>
-    <p>By default, PeerDrop uses free Google STUN and public TURN. If your connection fails across cellular (4G/5G) and Wi-Fi networks, configure your own custom TURN credentials here.</p>
+<!-- Advanced Modal -->
+<div class="modal-overlay" id="modal-advanced">
+  <div class="modal">
+    <h2>Advanced Settings</h2>
     
-    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">TURN Server URL</label>
-        <input type="text" id="turn-url-input" placeholder="e.g. turn:openrelay.metered.ca:443" style="font-size: 0.85rem; padding: 10px 14px; text-transform: none; letter-spacing: 0;">
+    <div class="advanced-options">
+      <label class="checkbox-label">
+        <input type="checkbox" id="show-logs-cb" onchange="toggleLogs()">
+        Show connection details
+      </label>
+
+      <div>
+        <label>TURN Server URL</label>
+        <input type="text" id="turn-url-input" placeholder="auto">
       </div>
-      
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">TURN Username</label>
-        <input type="text" id="turn-user-input" placeholder="e.g. your-metered-username" style="font-size: 0.85rem; padding: 10px 14px; text-transform: none; letter-spacing: 0;">
+      <div>
+        <label>TURN Username</label>
+        <input type="text" id="turn-user-input" placeholder="optional">
       </div>
-      
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase;">TURN Password / Credential</label>
-        <input type="text" id="turn-cred-input" placeholder="e.g. your-metered-credential" style="font-size: 0.85rem; padding: 10px 14px; text-transform: none; letter-spacing: 0;">
+      <div>
+        <label>TURN Password</label>
+        <input type="text" id="turn-cred-input" placeholder="optional">
       </div>
-    </div>
-    
-    <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 20px; line-height: 1.4;">
-      💡 Get free personal TURN server credentials (up to 50GB/month) by signing up at <a href="https://www.metered.ca/" target="_blank" style="color: var(--accent); text-decoration: none;">Metered.ca</a>.
     </div>
 
-    <button class="btn btn-primary" onclick="saveNetworkSettings()">Save Config</button>
-    <button class="btn btn-ghost" onclick="resetNetworkSettings()">Reset to Default</button>
-    <button class="btn btn-ghost" onclick="closeModal('modal-network')" style="margin-top: 6px;">Close</button>
+    <button class="btn btn-primary" onclick="saveNetworkSettings()" style="margin-bottom: 12px;">Save</button>
+    <button class="btn btn-secondary" onclick="closeModal('modal-advanced')">Close</button>
   </div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-window.addEventListener('DOMContentLoaded', async () => {
-  if (IS_MOBILE) {
-    const screenTab = document.querySelector('[data-panel="screen"]');
-    if (screenTab) screenTab.innerHTML = "📷 Camera";
-    const shareBtn = document.getElementById("share-screen-btn");
-    if (shareBtn) shareBtn.textContent = "Share camera";
-    const ph = document.querySelector("#screen-placeholder p");
-    if (ph) ph.textContent = "No camera active";
-    const phIcon = document.querySelector("#screen-placeholder .big-icon");
-    if (phIcon) phIcon.textContent = "📷";
-  }
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const roomParam = urlParams.get('room');
-  if (roomParam) {
-    await openJoinModal(roomParam);
-    await joinRoom(); 
-  }
-});
-
 /* ══════════════════════════════════════════════════════════════════════
-   STATE
+   STATE & CONSTANTS
 ══════════════════════════════════════════════════════════════════════ */
+const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const MY_DEVICE_NAME = generateDeviceName();
+
 const STATE = {
   ws: null,
   pc: null,
@@ -586,6 +391,8 @@ const STATE = {
   screenSender: null,
   pendingIce: [],
   connected: false,
+  peerDeviceName: "Unknown Device",
+  transferStats: {} // tracking bytes/sec
 };
 
 const IS_LOCAL_HOST = window.location.hostname === "localhost" || 
@@ -594,107 +401,114 @@ const IS_LOCAL_HOST = window.location.hostname === "localhost" ||
                       window.location.hostname.startsWith("10.") ||
                       window.location.hostname.startsWith("172.");
 
-// If running locally, connect to local signaling server on port 3000
-// Otherwise, fallback to the public production server
 const WS_URL = (IS_LOCAL_HOST && window.location.protocol !== "file:")
   ? `ws://${window.location.hostname}:3000`
   : `wss://peerdrop-production-7711.up.railway.app`;
 
-/* ══════════════════════════════════════════════════════════════════════
-   LOGGING
-══════════════════════════════════════════════════════════════════════ */
-function log(msg, level = "normal") {
-  const wrap = document.getElementById(STATE.roomCode ? "room-log" : "lobby-log");
-  const line = document.createElement("div");
-  line.className = `log-line ${level}`;
-  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-  wrap.appendChild(line);
-  wrap.scrollTop = wrap.scrollHeight;
-  console.log(msg);
-}
+window.addEventListener('DOMContentLoaded', async () => {
+  if (IS_MOBILE) {
+    const screenTab = document.querySelector('[data-panel="screen"]');
+    if (screenTab) screenTab.innerHTML = "📷 Camera";
+    document.getElementById("share-screen-btn").textContent = "Share Camera";
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomParam = urlParams.get('room');
+  if (roomParam) {
+    await openReceiveModal(roomParam);
+    await joinRoom(); 
+  }
+});
 
 /* ══════════════════════════════════════════════════════════════════════
-   TOAST
+   UTILS & UI HELPERS
 ══════════════════════════════════════════════════════════════════════ */
+function generateDeviceName() {
+  const os = IS_MOBILE ? (navigator.userAgent.includes("Android") ? "Android" : "iPhone") : "PC";
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `${os}-${num}`;
+}
+
 let toastTimer;
 function toast(msg) {
   const el = document.getElementById("toast");
   el.textContent = msg;
   el.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+}
+
+function log(msg, level = "normal") {
+  const wrap = document.getElementById("room-log");
+  const line = document.createElement("div");
+  line.className = `log-line ${level}`;
+  line.textContent = `> ${msg}`;
+  wrap.appendChild(line);
+  wrap.scrollTop = wrap.scrollHeight;
+  console.log(`[PeerDrop] ${msg}`);
+}
+
+function updateStatus(icon, text, type = "normal") {
+  document.getElementById("status-icon").textContent = icon;
+  document.getElementById("status-text").textContent = text;
+  document.getElementById("status-indicator").style.borderColor = 
+    type === "success" ? "var(--success)" : 
+    type === "error" ? "var(--danger)" : "var(--border)";
+}
+
+function setPeerName(name) {
+  STATE.peerDeviceName = name;
+  document.getElementById("peer-name-display").textContent = `Connected to ${name}`;
+}
+
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+
+function switchTab(btn) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("panel-" + btn.dataset.panel).classList.add("active");
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   STATUS
-══════════════════════════════════════════════════════════════════════ */
-function setStatus(label, connected = false) {
-  document.getElementById("status-text").textContent = label;
-  const pill = document.getElementById("status-pill");
-  pill.className = "status-pill" + (connected ? " connected" : "");
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   WEBSOCKET / SIGNALING
+   SIGNALING
 ══════════════════════════════════════════════════════════════════════ */
 function connectWS() {
   return new Promise((resolve, reject) => {
+    if (STATE.ws && STATE.ws.readyState === WebSocket.OPEN) return resolve(STATE.ws);
     const ws = new WebSocket(WS_URL);
     STATE.ws = ws;
-    ws.onopen  = () => { log("Connected to signaling server", "info"); setStatus("SERVER OK"); resolve(ws); };
-    ws.onerror = ()  => { log("Cannot reach signaling server. Is it running?", "error"); reject(); };
-    ws.onclose = ()  => { log("Disconnected from signaling server", "warn"); setStatus("DISCONNECTED"); };
+    ws.onopen  = () => { log("Signaling connected"); resolve(ws); };
+    ws.onerror = ()  => { log("Signaling failed", "error"); reject(); };
+    ws.onclose = ()  => { log("Signaling disconnected", "warn"); };
     ws.onmessage = (e) => handleSignal(JSON.parse(e.data));
   });
 }
 
 function sendSignal(data) {
-  if (STATE.ws && STATE.ws.readyState === WebSocket.OPEN)
-    STATE.ws.send(JSON.stringify(data));
+  if (STATE.ws && STATE.ws.readyState === WebSocket.OPEN) STATE.ws.send(JSON.stringify(data));
 }
 
 async function handleSignal(msg) {
   switch (msg.type) {
     case "created":
-      STATE.peerId   = msg.peerId;
+      STATE.peerId = msg.peerId;
       STATE.roomCode = msg.roomCode;
-      document.getElementById("create-room-code").textContent = msg.roomCode;
-      
-      // Check if we are running on a local/file origin
-      if (isLocalOrigin()) {
-        document.getElementById("local-warning-panel").style.display = "block";
-        const savedUrl = localStorage.getItem("peerdrop_custom_base_url") || "";
-        const inputEl = document.getElementById("custom-base-url");
-        if (inputEl) {
-          inputEl.value = savedUrl;
-          if (!savedUrl) {
-            // Generate a smart placeholder
-            let placeholder = "http://192.168.1.50";
-            if (window.location.port) placeholder += ":" + window.location.port;
-            if (window.location.protocol === "file:") {
-              placeholder += "/index.html";
-            } else {
-              placeholder += window.location.pathname;
-            }
-            inputEl.placeholder = "e.g. " + placeholder;
-          }
-        }
-      } else {
-        document.getElementById("local-warning-panel").style.display = "none";
-      }
-
-      updateQrCodeDisplay();
-      log(`Room ${msg.roomCode} created — waiting for peer…`, "info");
+      document.getElementById("share-code-display").textContent = msg.roomCode;
+      updateQrCode();
+      if (isLocalOrigin()) document.getElementById("local-warning").style.display = "block";
+      updateStatus("🟡", "Waiting for device...");
       break;
 
     case "joined":
-      STATE.peerId   = msg.peerId;
+      STATE.peerId = msg.peerId;
       STATE.roomCode = msg.roomCode;
-      log(`Joined room ${msg.roomCode}`, "info");
+      updateStatus("🟡", "Preparing connection...");
       break;
 
     case "peer-joined":
-      log("Peer joined! Initiating WebRTC handshake…", "info");
+      updateStatus("🟡", "Connecting devices...");
       STATE.isInitiator = true;
       await initPeerConnection();
       setupDataChannel();
@@ -704,7 +518,7 @@ async function handleSignal(msg) {
       break;
 
     case "offer":
-      log("Received WebRTC offer…", "info");
+      updateStatus("🟡", "Connecting devices...");
       await initPeerConnection();
       await STATE.pc.setRemoteDescription({ type: "offer", sdp: msg.sdp });
       await flushIceCandidates();
@@ -714,7 +528,6 @@ async function handleSignal(msg) {
       break;
 
     case "answer":
-      log("Received WebRTC answer…", "info");
       await STATE.pc.setRemoteDescription({ type: "answer", sdp: msg.sdp });
       await flushIceCandidates();
       break;
@@ -722,29 +535,29 @@ async function handleSignal(msg) {
     case "ice-candidate":
       if (msg.candidate) {
         const cand = new RTCIceCandidate(msg.candidate);
-        if (STATE.pc && STATE.pc.remoteDescription)
-          await STATE.pc.addIceCandidate(cand).catch(() => {});
-        else
-          STATE.pendingIce.push(cand);
+        if (STATE.pc && STATE.pc.remoteDescription) await STATE.pc.addIceCandidate(cand).catch(() => {});
+        else STATE.pendingIce.push(cand);
       }
       break;
 
     case "peer-left":
-      log("Peer disconnected.", "warn");
-      setStatus("PEER LEFT");
-      STATE.connected = false;
+      updateStatus("🔴", "Connection lost", "error");
+      toast("Device disconnected");
+      leaveRoom();
       break;
 
     case "error":
-      log("Server: " + msg.message, "error");
-      toast("⚠ " + msg.message);
+      toast(msg.message);
+      if (document.getElementById("join-btn")) {
+        document.getElementById("join-btn").textContent = "Connect";
+        document.getElementById("join-btn").disabled = false;
+      }
       break;
   }
 }
 
 async function flushIceCandidates() {
-  for (const cand of STATE.pendingIce)
-    await STATE.pc.addIceCandidate(cand).catch(() => {});
+  for (const cand of STATE.pendingIce) await STATE.pc.addIceCandidate(cand).catch(() => {});
   STATE.pendingIce = [];
 }
 
@@ -752,48 +565,16 @@ async function flushIceCandidates() {
    WEBRTC
 ══════════════════════════════════════════════════════════════════════ */
 function getIceServers() {
-  const customUrl = localStorage.getItem("peerdrop_turn_url");
-  const customUser = localStorage.getItem("peerdrop_turn_username");
-  const customCred = localStorage.getItem("peerdrop_turn_credential");
-  
-  const servers = [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" }
-  ];
-  
-  if (customUrl && customUser && customCred) {
-    servers.push({
-      urls: customUrl,
-      username: customUser,
-      credential: customCred
-    });
-  } else {
-    servers.push(
-      {
-        urls: "turn:openrelay.metered.ca:80",
-        username: "openrelayproject",
-        credential: "openrelayproject"
-      },
-      {
-        urls: "turn:openrelay.metered.ca:443",
-        username: "openrelayproject",
-        credential: "openrelayproject"
-      },
-      {
-        urls: "turn:openrelay.metered.ca:443?transport=tcp",
-        username: "openrelayproject",
-        credential: "openrelayproject"
-      }
-    );
-  }
+  const url = localStorage.getItem("peerdrop_turn_url");
+  const user = localStorage.getItem("peerdrop_turn_username");
+  const cred = localStorage.getItem("peerdrop_turn_credential");
+  const servers = [ { urls: "stun:stun.l.google.com:19302" } ];
+  if (url && user && cred) servers.push({ urls: url, username: user, credential: cred });
   return servers;
 }
 
 async function initPeerConnection() {
-  const servers = getIceServers();
-  log("Initializing WebRTC with " + servers.length + " ICE servers", "info");
-  STATE.pc = new RTCPeerConnection({ iceServers: servers });
+  STATE.pc = new RTCPeerConnection({ iceServers: getIceServers() });
 
   STATE.pc.onicecandidate = (e) => {
     if (e.candidate) sendSignal({ type: "ice-candidate", candidate: e.candidate });
@@ -801,19 +582,22 @@ async function initPeerConnection() {
 
   STATE.pc.onconnectionstatechange = () => {
     const s = STATE.pc.connectionState;
-    log(`WebRTC state: ${s}`);
+    log(`Connection state: ${s}`);
     if (s === "connected") {
       STATE.connected = true;
-      setStatus("P2P CONNECTED", true);
-      closeModal("modal-create");
-      closeModal("modal-join");
-      showRoom();
-      toast("🎉 Connected! Start sharing.");
+      updateStatus("🟢", "Ready to send", "success");
+      closeModal("modal-send");
+      closeModal("modal-receive");
+      document.getElementById("lobby").style.display = "none";
+      document.getElementById("room").style.display = "block";
+      document.getElementById("peer-name-display").textContent = "Connected to another device";
+      // Send our name
+      if (STATE.dataChannel && STATE.dataChannel.readyState === "open") {
+        STATE.dataChannel.send(JSON.stringify({ type: "hello", name: MY_DEVICE_NAME }));
+      }
     } else if (s === "failed" || s === "disconnected") {
-      log(`Connection ${s}`, "error");
-      toast(`Connection ${s}`);
-      const btn = document.getElementById("join-btn");
-      if (btn) { btn.disabled = false; btn.textContent = "Connect →"; }
+      updateStatus("🔴", "Connection failed", "error");
+      toast("Connection failed");
       leaveRoom();
     }
   };
@@ -821,7 +605,6 @@ async function initPeerConnection() {
   STATE.pc.ondatachannel = (e) => {
     STATE.dataChannel = e.channel;
     wireDataChannel();
-    log("Data channel ready", "info");
   };
 
   STATE.pc.ontrack = (e) => {
@@ -830,7 +613,6 @@ async function initPeerConnection() {
     vid.style.display = "block";
     vid.play().catch(() => {});
     document.getElementById("screen-placeholder").style.display = "none";
-    log("Receiving screen share", "info");
   };
 }
 
@@ -843,442 +625,294 @@ function wireDataChannel() {
   const dc = STATE.dataChannel;
   dc.binaryType = "arraybuffer";
 
-  let recvMeta = null;
-  let recvBufs = [];
-  let recvBytes = 0;
+  let recvMeta = null, recvBufs = [], recvBytes = 0;
+
+  dc.onopen = () => {
+    dc.send(JSON.stringify({ type: "hello", name: MY_DEVICE_NAME }));
+  };
 
   dc.onmessage = (e) => {
     if (typeof e.data === "string") {
       const msg = JSON.parse(e.data);
-      if (msg.type === "text") {
+      if (msg.type === "hello") {
+        setPeerName(msg.name);
+      } else if (msg.type === "text") {
         renderReceivedText(msg.content);
-        toast("📋 Text received");
+        toast("Message received");
       } else if (msg.type === "file-meta") {
-        recvMeta  = msg;
-        recvBufs  = [];
-        recvBytes = 0;
-        addTransferItem(msg.name, msg.size, "recv", msg.id);
-        log(`Receiving file: ${msg.name} (${formatSize(msg.size)})`, "info");
+        recvMeta = msg; recvBufs = []; recvBytes = 0;
+        STATE.transferStats[msg.id] = { start: Date.now(), lastBytes: 0, lastTime: Date.now() };
+        addTransferUI(msg.name, msg.size, "receive", msg.id);
       }
     } else {
       recvBufs.push(e.data);
       recvBytes += e.data.byteLength;
-      updateProgress(recvMeta.id, recvBytes / recvMeta.size);
+      updateTransferUI(recvMeta.id, recvMeta.size, recvBytes);
+      
       if (recvBytes >= recvMeta.size) {
         const blob = new Blob(recvBufs, { type: recvMeta.mime });
-        offerDownload(blob, recvMeta.name, recvMeta.id);
-        toast("📦 File received!");
-        log(`File received: ${recvMeta.name}`, "info");
+        finishTransferUI(recvMeta.id, blob, recvMeta.name);
         recvMeta = null; recvBufs = []; recvBytes = 0;
       }
     }
   };
-
-  dc.onopen  = () => log("Data channel open", "info");
-  dc.onerror = (e) => log("Data channel error: " + e.message, "error");
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   LOBBY ACTIONS
+   ACTIONS
 ══════════════════════════════════════════════════════════════════════ */
-async function openCreateModal() {
-  openModal("modal-create");
-  document.getElementById("create-room-code").textContent = "…";
+async function openSendModal() {
+  openModal("modal-send");
+  document.getElementById("share-code-display").textContent = "----";
   try {
     await connectWS();
     sendSignal({ type: "create" });
-  } catch { toast("⚠ Server not reachable"); closeModal("modal-create"); }
+  } catch { toast("Network error"); closeModal("modal-send"); }
 }
 
-async function openJoinModal(initialCode) {
-  openModal("modal-join");
+async function openReceiveModal(initialCode) {
+  openModal("modal-receive");
   const btn = document.getElementById("join-btn");
-  if (btn) { btn.disabled = false; btn.textContent = "Connect →"; }
+  btn.disabled = false; btn.textContent = "Connect";
   document.getElementById("join-code-input").value = initialCode || "";
-  try { await connectWS(); } catch { toast("⚠ Server not reachable"); closeModal("modal-join"); }
 }
 
 async function joinRoom() {
   const code = document.getElementById("join-code-input").value.trim().toUpperCase();
-  if (code.length < 4) { toast("Enter a valid room code"); return; }
+  if (code.length < 4) return toast("Enter a valid code");
   const btn = document.getElementById("join-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Connecting..."; }
-  
-  // If WS is not connected, try to connect it first
-  if (!STATE.ws || STATE.ws.readyState !== WebSocket.OPEN) {
-    try {
-      await connectWS();
-    } catch (err) {
-      toast("⚠ Server not reachable");
-      if (btn) { btn.disabled = false; btn.textContent = "Connect →"; }
-      return;
-    }
-  }
-  
-  sendSignal({ type: "join", roomCode: code });
-}
-
-function showRoom() {
-  document.getElementById("lobby").style.display = "none";
-  document.getElementById("room").style.display  = "block";
-  document.getElementById("room-code-badge").innerHTML =
-    `${STATE.roomCode} <span style="font-size:.7rem;color:var(--muted)">copy</span>`;
+  btn.disabled = true; btn.textContent = "Connecting...";
+  try {
+    await connectWS();
+    sendSignal({ type: "join", roomCode: code });
+  } catch { toast("Network error"); btn.disabled = false; btn.textContent = "Connect"; }
 }
 
 function leaveRoom() {
-  if (STATE.pc)    { STATE.pc.close();    STATE.pc    = null; }
-  if (STATE.ws)    { STATE.ws.close();    STATE.ws    = null; }
+  if (STATE.pc) { STATE.pc.close(); STATE.pc = null; }
+  if (STATE.ws) { STATE.ws.close(); STATE.ws = null; }
   if (STATE.screenStream) { STATE.screenStream.getTracks().forEach(t => t.stop()); STATE.screenStream = null; }
   STATE.connected = false; STATE.roomCode = null;
-  document.getElementById("lobby").style.display = "";
-  document.getElementById("room").style.display  = "none";
+  document.getElementById("lobby").style.display = "block";
+  document.getElementById("room").style.display = "none";
   document.getElementById("transfers").innerHTML = "";
   document.getElementById("received-texts").innerHTML = "";
-  setStatus("NOT CONNECTED");
-  log("Left the room");
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   FILE TRANSFER
+   FILE TRANSFER & UI
 ══════════════════════════════════════════════════════════════════════ */
 const CHUNK_SIZE = 64 * 1024; // 64 KB
 
-document.getElementById("drop-zone").addEventListener("dragover", (e) => {
-  e.preventDefault(); e.currentTarget.classList.add("dragover");
-});
-document.getElementById("drop-zone").addEventListener("dragleave", (e) => {
-  e.currentTarget.classList.remove("dragover");
-});
-document.getElementById("drop-zone").addEventListener("drop", (e) => {
-  e.preventDefault(); e.currentTarget.classList.remove("dragover");
-  [...e.dataTransfer.files].forEach(sendFile);
-});
-document.getElementById("file-input").addEventListener("change", (e) => {
-  [...e.target.files].forEach(sendFile); e.target.value = "";
-});
+document.getElementById("drop-zone").addEventListener("dragover", (e) => { e.preventDefault(); e.currentTarget.classList.add("dragover"); });
+document.getElementById("drop-zone").addEventListener("dragleave", (e) => { e.currentTarget.classList.remove("dragover"); });
+document.getElementById("drop-zone").addEventListener("drop", (e) => { e.preventDefault(); e.currentTarget.classList.remove("dragover"); [...e.dataTransfer.files].forEach(sendFile); });
+document.getElementById("file-input").addEventListener("change", (e) => { [...e.target.files].forEach(sendFile); e.target.value = ""; });
 
 async function sendFile(file) {
-  if (!STATE.connected) { toast("⚠ Not connected to a peer"); return; }
+  if (!STATE.connected) return toast("Not connected");
   const id = crypto.randomUUID();
-  const meta = { type: "file-meta", id, name: file.name, size: file.size, mime: file.type };
-  STATE.dataChannel.send(JSON.stringify(meta));
-  addTransferItem(file.name, file.size, "send", id);
-  log(`Sending: ${file.name} (${formatSize(file.size)})`, "info");
+  STATE.dataChannel.send(JSON.stringify({ type: "file-meta", id, name: file.name, size: file.size, mime: file.type }));
+  addTransferUI(file.name, file.size, "send", id);
+  STATE.transferStats[id] = { start: Date.now(), lastBytes: 0, lastTime: Date.now() };
 
   const reader = new FileReader();
   let offset = 0;
+  
   const sendChunk = () => {
     const slice = file.slice(offset, offset + CHUNK_SIZE);
     reader.readAsArrayBuffer(slice);
   };
+  
   reader.onload = (e) => {
     STATE.dataChannel.send(e.target.result);
     offset += e.target.result.byteLength;
-    updateProgress(id, offset / file.size);
+    updateTransferUI(id, file.size, offset);
+    
     if (offset < file.size) {
-      // Throttle if buffer is filling
-      if (STATE.dataChannel.bufferedAmount > 1024 * 1024)
-        setTimeout(sendChunk, 50);
+      if (STATE.dataChannel.bufferedAmount > 16 * 1024 * 1024) setTimeout(sendChunk, 50); // 16MB backpressure
       else sendChunk();
-    } else { log(`Sent: ${file.name}`, "info"); toast(`📦 ${file.name} sent!`); }
+    }
   };
   sendChunk();
 }
 
-function addTransferItem(name, size, dir, id) {
+function formatSize(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1024**2) return (b/1024).toFixed(1) + " KB";
+  if (b < 1024**3) return (b/1024**2).toFixed(1) + " MB";
+  return (b/1024**3).toFixed(2) + " GB";
+}
+
+function formatTime(s) {
+  if (s < 60) return Math.round(s) + " seconds";
+  const m = Math.floor(s / 60);
+  return m + (m === 1 ? " minute" : " minutes");
+}
+
+function addTransferUI(name, size, dir, id) {
   const el = document.createElement("div");
   el.className = "transfer-item";
-  el.id = "transfer-" + id;
+  el.id = `tf-${id}`;
   el.innerHTML = `
-    <div class="transfer-icon">${dir === "send" ? "⬆" : "⬇"}</div>
-    <div class="transfer-info">
-      <div class="transfer-name">${escHtml(name)}</div>
-      <div class="transfer-meta">${formatSize(size)} · ${dir === "send" ? "Sending" : "Receiving"}</div>
-      <div class="progress-bar"><div class="progress-fill" id="prog-${id}" style="width:0%"></div></div>
+    <div class="transfer-header">
+      <div>
+        <div class="transfer-name">${name.replace(/&/g,"&amp;").replace(/</g,"&lt;")}</div>
+        <div class="transfer-stats" id="tfs-${id}">0 B / ${formatSize(size)}</div>
+      </div>
+      <div class="transfer-pct" id="tfp-${id}">0%</div>
     </div>
-    <div class="transfer-action" id="action-${id}"></div>
+    <div class="progress-bar"><div class="progress-fill" id="tff-${id}"></div></div>
+    <div id="tfa-${id}" style="margin-top: 8px;"></div>
   `;
   document.getElementById("transfers").prepend(el);
 }
 
-function updateProgress(id, pct) {
-  const el = document.getElementById("prog-" + id);
-  if (el) el.style.width = Math.round(pct * 100) + "%";
+function updateTransferUI(id, total, current) {
+  const pct = Math.floor((current / total) * 100);
+  document.getElementById(`tfp-${id}`).textContent = `${pct}%`;
+  document.getElementById(`tff-${id}`).style.width = `${pct}%`;
+
+  const stats = STATE.transferStats[id];
+  const now = Date.now();
+  if (now - stats.lastTime > 1000) {
+    const bytesPerSec = (current - stats.lastBytes) / ((now - stats.lastTime) / 1000);
+    const etaSecs = (total - current) / bytesPerSec;
+    const etaStr = isFinite(etaSecs) && etaSecs > 0 ? ` · ${formatTime(etaSecs)} remaining` : "";
+    document.getElementById(`tfs-${id}`).textContent = `${formatSize(current)} / ${formatSize(total)}${etaStr}`;
+    stats.lastBytes = current;
+    stats.lastTime = now;
+  }
 }
 
-function offerDownload(blob, name, id) {
-  const url = URL.createObjectURL(blob);
-  const action = document.getElementById("action-" + id);
-  if (action) {
+function finishTransferUI(id, blob, name) {
+  document.getElementById(`tfp-${id}`).textContent = "100%";
+  document.getElementById(`tff-${id}`).style.width = "100%";
+  document.getElementById(`tfs-${id}`).textContent = "Completed";
+  
+  if (blob) {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.className = "dl-btn"; a.href = url; a.download = name; a.textContent = "Save";
-    action.appendChild(a);
+    a.className = "btn btn-primary";
+    a.style.minHeight = "40px"; a.style.padding = "0 16px";
+    a.href = url; a.download = name; a.textContent = "Save File";
+    document.getElementById(`tfa-${id}`).appendChild(a);
   }
-  const meta = document.querySelector(`#transfer-${id} .transfer-meta`);
-  if (meta) meta.textContent = formatSize(blob.size) + " · Ready to save";
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   TEXT TRANSFER
+   TEXT & SCREEN
 ══════════════════════════════════════════════════════════════════════ */
-document.getElementById("text-input").addEventListener("keydown", (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") sendText();
-});
-
 function sendText() {
   const val = document.getElementById("text-input").value.trim();
-  if (!val) { toast("Nothing to send"); return; }
-  if (!STATE.connected) { toast("⚠ Not connected to a peer"); return; }
+  if (!val || !STATE.connected) return;
   STATE.dataChannel.send(JSON.stringify({ type: "text", content: val }));
-  toast("📋 Text sent!");
-  log("Sent text snippet", "info");
+  document.getElementById("text-input").value = "";
+  renderReceivedText(val, true);
 }
 
-function clearText() { document.getElementById("text-input").value = ""; }
-
-function renderReceivedText(content) {
-  const wrap = document.getElementById("received-texts");
+function renderReceivedText(content, isMe = false) {
   const el = document.createElement("div");
   el.className = "received-bubble";
+  if (isMe) el.style.background = "var(--border)";
+  const safeContent = content.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   el.innerHTML = `
     <div class="bubble-meta">
-      Received · ${new Date().toLocaleTimeString()}
-      <button class="bubble-copy" onclick="navigator.clipboard.writeText(this.closest('.received-bubble').querySelector('.bubble-content').textContent); toast('Copied!')">Copy</button>
+      ${isMe ? "You" : STATE.peerDeviceName} · ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+      <button class="bubble-copy" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent); toast('Copied')">Copy</button>
     </div>
-    <div class="bubble-content">${escHtml(content)}</div>
+    <div>${safeContent}</div>
   `;
-  wrap.prepend(el);
+  document.getElementById("received-texts").prepend(el);
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   SCREEN SHARING
-══════════════════════════════════════════════════════════════════════ */
 let sharingScreen = false;
 async function toggleScreenShare() {
-  if (!STATE.connected) { toast("⚠ Not connected to a peer"); return; }
+  if (!STATE.connected) return;
+  const btn = document.getElementById("share-screen-btn");
   if (!sharingScreen) {
     try {
       const stream = IS_MOBILE 
         ? await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true })
         : await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       STATE.screenStream = stream;
-
-      // Show local preview
-      const vid = document.getElementById("screen-video");
-      vid.srcObject = stream;
-      vid.style.display = "block";
-      vid.play().catch(() => {});
+      document.getElementById("screen-video").srcObject = stream;
+      document.getElementById("screen-video").style.display = "block";
       document.getElementById("screen-placeholder").style.display = "none";
 
-      // Add tracks to peer connection
-      stream.getTracks().forEach(track => {
-        STATE.screenSender = STATE.pc.addTrack(track, stream);
-      });
-
-      // Renegotiate
+      stream.getTracks().forEach(t => STATE.screenSender = STATE.pc.addTrack(t, stream));
       const offer = await STATE.pc.createOffer();
       await STATE.pc.setLocalDescription(offer);
       sendSignal({ type: "offer", sdp: offer.sdp });
 
       sharingScreen = true;
-      document.getElementById("share-screen-btn").textContent = IS_MOBILE ? "Stop camera" : "Stop sharing";
-      document.getElementById("share-screen-btn").className = "btn btn-danger";
-
-      stream.getVideoTracks()[0].onended = () => stopScreenShare();
-      log((IS_MOBILE ? "Camera" : "Screen") + " sharing started", "info");
-    } catch (err) {
-      log("Media share cancelled or denied", "warn");
-    }
+      btn.textContent = IS_MOBILE ? "Stop Camera" : "Stop Sharing";
+      btn.className = "btn btn-danger";
+      stream.getVideoTracks()[0].onended = stopScreenShare;
+    } catch { toast("Screen share cancelled"); }
   } else { stopScreenShare(); }
 }
 
 function stopScreenShare() {
-  if (STATE.screenStream) {
-    STATE.screenStream.getTracks().forEach(t => t.stop());
-    STATE.screenStream = null;
-  }
-  if (STATE.screenSender) {
-    STATE.pc.removeTrack(STATE.screenSender);
-    STATE.screenSender = null;
-  }
-  const vid = document.getElementById("screen-video");
-  vid.srcObject = null; vid.style.display = "none";
-  document.getElementById("screen-placeholder").style.display = "";
+  if (STATE.screenStream) STATE.screenStream.getTracks().forEach(t => t.stop());
+  if (STATE.screenSender) STATE.pc.removeTrack(STATE.screenSender);
+  document.getElementById("screen-video").style.display = "none";
+  document.getElementById("screen-placeholder").style.display = "block";
   sharingScreen = false;
-  document.getElementById("share-screen-btn").textContent = IS_MOBILE ? "Share camera" : "Share my screen";
-  document.getElementById("share-screen-btn").className = "btn btn-primary";
-  log((IS_MOBILE ? "Camera" : "Screen") + " sharing stopped", "warn");
+  const btn = document.getElementById("share-screen-btn");
+  btn.textContent = IS_MOBILE ? "Share Camera" : "Share My Screen";
+  btn.className = "btn btn-primary";
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   UI HELPERS
+   ADVANCED & CONFIG
 ══════════════════════════════════════════════════════════════════════ */
-function openModal(id)  { document.getElementById(id).classList.add("open"); }
-function closeModal(id) { document.getElementById(id).classList.remove("open"); }
-
-function switchTab(btn) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  btn.classList.add("active");
-  document.getElementById("panel-" + btn.dataset.panel).classList.add("active");
-}
-
-function copyRoomCode() {
-  const code = STATE.roomCode;
-  if (!code) return;
-  navigator.clipboard.writeText(code).then(() => toast("📋 " + code + " copied!"));
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-
-function formatSize(bytes) {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1024**2) return (bytes/1024).toFixed(1) + " KB";
-  if (bytes < 1024**3) return (bytes/1024**2).toFixed(1) + " MB";
-  return (bytes/1024**3).toFixed(2) + " GB";
-}
-
-function isLocalOrigin() {
-  const origin = window.location.origin;
-  const host = window.location.hostname;
-  return origin.startsWith("file://") || 
-         origin === "null" ||
-         host === "localhost" || 
-         host === "127.0.0.1" || 
-         host === "::1" ||
-         !host;
-}
-
-function getJoinUrl(roomCode) {
-  let baseUrl = localStorage.getItem("peerdrop_custom_base_url");
-  if (!baseUrl) {
-    let origin = window.location.origin;
-    if (origin === "null" || origin.startsWith("file://")) {
-      origin = "http://localhost:5500";
-    }
-    baseUrl = origin + window.location.pathname;
-  }
-  
-  let url;
-  try {
-    url = new URL(baseUrl);
-  } catch (e) {
-    try {
-      url = new URL("http://" + baseUrl);
-    } catch (err) {
-      url = new URL(window.location.href);
-    }
-  }
-  
-  url.searchParams.set("room", roomCode);
-  return url.toString();
-}
-
-function updateQrCodeDisplay() {
-  if (!STATE.roomCode) return;
-  const joinUrl = getJoinUrl(STATE.roomCode);
-  
-  document.getElementById("qr-code-img").src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(joinUrl);
-  document.getElementById("qr-container").style.display = "block";
-  
-  const previewEl = document.getElementById("qr-preview-url-text");
-  if (previewEl) {
-    previewEl.innerHTML = `QR points to: <code style="word-break: break-all; color: var(--accent);">${escHtml(joinUrl)}</code>`;
-  }
-}
-
-function applyCustomBaseUrl() {
-  const inputEl = document.getElementById("custom-base-url");
-  if (!inputEl) return;
-  
-  let val = inputEl.value.trim();
-  if (!val) {
-    localStorage.removeItem("peerdrop_custom_base_url");
-    toast("Reset QR code to default URL");
-  } else {
-    if (!/^https?:\/\//i.test(val)) {
-      val = "http://" + val;
-    }
-    localStorage.setItem("peerdrop_custom_base_url", val);
-    inputEl.value = val;
-    toast("Custom base URL applied!");
-  }
-  updateQrCodeDisplay();
-}
-
-function openNetworkSettings() {
-  openModal("modal-network");
+function openAdvancedModal() {
+  openModal("modal-advanced");
   document.getElementById("turn-url-input").value = localStorage.getItem("peerdrop_turn_url") || "";
   document.getElementById("turn-user-input").value = localStorage.getItem("peerdrop_turn_username") || "";
   document.getElementById("turn-cred-input").value = localStorage.getItem("peerdrop_turn_credential") || "";
+  document.getElementById("show-logs-cb").checked = localStorage.getItem("peerdrop_show_logs") === "true";
+  toggleLogs();
 }
 
 function saveNetworkSettings() {
-  const url = document.getElementById("turn-url-input").value.trim();
-  const user = document.getElementById("turn-user-input").value.trim();
-  const cred = document.getElementById("turn-cred-input").value.trim();
-  
-  if (url && (!user || !cred)) {
-    toast("⚠ Please provide both Username and Password");
-    return;
-  }
-  
-  if (!url) {
-    resetNetworkSettings();
-    return;
-  }
-  
-  localStorage.setItem("peerdrop_turn_url", url);
-  localStorage.setItem("peerdrop_turn_username", user);
-  localStorage.setItem("peerdrop_turn_credential", cred);
-  toast("⚙ Custom WebRTC Config saved!");
-  closeModal("modal-network");
+  localStorage.setItem("peerdrop_turn_url", document.getElementById("turn-url-input").value.trim());
+  localStorage.setItem("peerdrop_turn_username", document.getElementById("turn-user-input").value.trim());
+  localStorage.setItem("peerdrop_turn_credential", document.getElementById("turn-cred-input").value.trim());
+  localStorage.setItem("peerdrop_show_logs", document.getElementById("show-logs-cb").checked);
+  toast("Settings saved");
+  closeModal("modal-advanced");
+  toggleLogs();
 }
 
-function resetNetworkSettings() {
-  localStorage.removeItem("peerdrop_turn_url");
-  localStorage.removeItem("peerdrop_turn_username");
-  localStorage.removeItem("peerdrop_turn_credential");
-  document.getElementById("turn-url-input").value = "";
-  document.getElementById("turn-user-input").value = "";
-  document.getElementById("turn-cred-input").value = "";
-  toast("⚙ WebRTC Config reset to default.");
-  closeModal("modal-network");
+function toggleLogs() {
+  const show = document.getElementById("show-logs-cb").checked || localStorage.getItem("peerdrop_show_logs") === "true";
+  const logWrap = document.getElementById("room-log");
+  if (show) logWrap.classList.add("show"); else logWrap.classList.remove("show");
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   VISIBILITY RECONNECTION
-══════════════════════════════════════════════════════════════════════ */
-document.addEventListener("visibilitychange", async () => {
-  if (document.visibilityState === "visible") {
-    log("App foregrounded. Checking connection state...", "info");
-    const wsDead = !STATE.ws || STATE.ws.readyState !== WebSocket.OPEN;
-    
-    // If WS dead, WebRTC not established
-    if (wsDead && !STATE.connected && STATE.roomCode) {
-      log("Reconnecting to lobby...", "warn");
-      try {
-        await connectWS();
-        sendSignal({ type: STATE.isInitiator ? "create" : "join", roomCode: STATE.roomCode });
-      } catch (err) { log("Reconnection failed", "error"); }
-    }
-    // If WS dead, WebRTC was connected but PC is disconnected/failed
-    else if (wsDead && STATE.connected && STATE.pc && (STATE.pc.connectionState === "disconnected" || STATE.pc.connectionState === "failed")) {
-      log("Connection dropped in background. Attempting full renegotiation...", "warn");
-      if (STATE.pc) { STATE.pc.close(); STATE.pc = null; }
-      try {
-        await connectWS();
-        sendSignal({ type: STATE.isInitiator ? "create" : "join", roomCode: STATE.roomCode });
-      } catch (err) { log("Reconnection failed", "error"); }
-    }
-  }
-});
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+function isLocalOrigin() {
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:";
 }
+
+function updateQrCode() {
+  if (!STATE.roomCode) return;
+  let baseUrl = localStorage.getItem("peerdrop_custom_base_url") || window.location.origin + window.location.pathname;
+  if (baseUrl === "null" || baseUrl.startsWith("file://")) baseUrl = "http://192.168.1.50:3000";
+  const url = new URL(baseUrl);
+  url.searchParams.set("room", STATE.roomCode);
+  document.getElementById("qr-code-img").src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url.toString());
+  document.getElementById("qr-container").style.display = "block";
+}
+
+function applyCustomBaseUrl() {
+  const val = document.getElementById("custom-base-url").value.trim();
+  if (val) localStorage.setItem("peerdrop_custom_base_url", /^https?:\/\//i.test(val) ? val : "http://" + val);
+  updateQrCode();
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
 </body>
 </html>
