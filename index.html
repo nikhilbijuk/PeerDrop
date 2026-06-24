@@ -11,39 +11,70 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
+  /* Default: Premium Light Theme */
   :root {
-    --bg: #0F0F1A;
-    --card: rgba(25, 25, 45, 0.6);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --text: #F3F4F6;
-    --secondary: #9CA3AF;
+    --bg: #F4F6F9;
+    --card: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(0, 0, 0, 0.06);
+    --text: #1E293B;
+    --secondary: #64748B;
     --primary: #10B981; /* Emerald/Turquoise */
     --primary-hover: #059669;
-    --primary-glow: rgba(16, 185, 129, 0.15);
-    --border: rgba(255, 255, 255, 0.1);
-    --border-hover: rgba(255, 255, 255, 0.2);
+    --primary-glow: rgba(16, 185, 129, 0.1);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-hover: rgba(0, 0, 0, 0.15);
     --danger: #EF4444;
     --success: #10B981;
     --warning: #F59E0B;
     --radius: 20px;
     --font: 'Outfit', sans-serif;
-    --shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
   }
 
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #F4F6F9;
-      --card: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(0, 0, 0, 0.06);
-      --text: #1E293B;
-      --secondary: #64748B;
+  /* Support OS preference for Dark Theme unless light is explicitly toggled */
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light-theme) {
+      --bg: #0F0F1A;
+      --card: rgba(25, 25, 45, 0.6);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #F3F4F6;
+      --secondary: #9CA3AF;
       --primary: #10B981;
       --primary-hover: #059669;
-      --primary-glow: rgba(16, 185, 129, 0.1);
-      --border: rgba(0, 0, 0, 0.08);
-      --border-hover: rgba(0, 0, 0, 0.15);
-      --shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+      --primary-glow: rgba(16, 185, 129, 0.15);
+      --border: rgba(255, 255, 255, 0.1);
+      --border-hover: rgba(255, 255, 255, 0.2);
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
     }
+  }
+
+  /* Explicit CSS classes for manual toggles */
+  :root.dark-theme {
+    --bg: #0F0F1A;
+    --card: rgba(25, 25, 45, 0.6);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text: #F3F4F6;
+    --secondary: #9CA3AF;
+    --primary: #10B981;
+    --primary-hover: #059669;
+    --primary-glow: rgba(16, 185, 129, 0.15);
+    --border: rgba(255, 255, 255, 0.1);
+    --border-hover: rgba(255, 255, 255, 0.2);
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  :root.light-theme {
+    --bg: #F4F6F9;
+    --card: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(0, 0, 0, 0.06);
+    --text: #1E293B;
+    --secondary: #64748B;
+    --primary: #10B981;
+    --primary-hover: #059669;
+    --primary-glow: rgba(16, 185, 129, 0.1);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-hover: rgba(0, 0, 0, 0.15);
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -311,6 +342,7 @@
     <div class="logo">PeerDrop</div>
     <div class="header-actions">
       <button id="install-pwa-btn" class="advanced-btn" style="display: none; color: var(--primary);" onclick="installPWA()">📲 Install</button>
+      <button id="theme-toggle-btn" class="advanced-btn" onclick="toggleTheme()">🌙</button>
       <button class="advanced-btn" onclick="openAdvancedModal()">⚙️ Settings</button>
     </div>
   </header>
@@ -548,6 +580,9 @@ const WS_URL = (IS_LOCAL_HOST && window.location.protocol !== "file:")
   : `wss://peerdrop-production-7711.up.railway.app`;
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // Initialize theme settings
+  initTheme();
+
   // Discover local IP client-side for QR codes
   startLocalIpDiscovery();
 
@@ -602,6 +637,43 @@ function updateMyDeviceName(val) {
     localStorage.setItem("peerdrop_device_name", val);
     sendSignal({ type: "register", name: MY_DEVICE_NAME });
     toast("Device name saved");
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   THEME TOGGLER (LIGHT / DARK)
+   ══════════════════════════════════════════════════════════════════════ */
+function initTheme() {
+  const pref = localStorage.getItem("peerdrop_theme");
+  const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const btn = document.getElementById("theme-toggle-btn");
+  
+  if (pref === "dark" || (!pref && systemDark)) {
+    document.documentElement.classList.add("dark-theme");
+    document.documentElement.classList.remove("light-theme");
+    if (btn) btn.textContent = "☀️";
+  } else {
+    document.documentElement.classList.add("light-theme");
+    document.documentElement.classList.remove("dark-theme");
+    if (btn) btn.textContent = "🌙";
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.contains("dark-theme") || 
+                 (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.classList.contains("light-theme"));
+  const btn = document.getElementById("theme-toggle-btn");
+  
+  if (isDark) {
+    document.documentElement.classList.remove("dark-theme");
+    document.documentElement.classList.add("light-theme");
+    localStorage.setItem("peerdrop_theme", "light");
+    if (btn) btn.textContent = "🌙";
+  } else {
+    document.documentElement.classList.remove("light-theme");
+    document.documentElement.classList.add("dark-theme");
+    localStorage.setItem("peerdrop_theme", "dark");
+    if (btn) btn.textContent = "☀️";
   }
 }
 
