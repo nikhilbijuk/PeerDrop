@@ -5,41 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>PeerDrop — Share Files Instantly</title>
 <link rel="manifest" href="./manifest.json"/>
+<meta name="theme-color" content="#12121e" media="(prefers-color-scheme: dark)"/>
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)"/>
-<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
   :root {
-    --bg: #FFFFFF;
-    --card: #F8F9FA;
-    --text: #111111;
-    --secondary: #666666;
-    --primary: #2563EB;
-    --primary-hover: #1D4ED8;
-    --border: #E5E7EB;
-    --border-hover: #D1D5DB;
-    --danger: #DC2626;
-    --success: #16A34A;
-    --warning: #CA8A04;
-    --radius: 16px;
-    --font: 'Inter', sans-serif;
+    --bg: #0F0F1A;
+    --card: rgba(25, 25, 45, 0.6);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text: #F3F4F6;
+    --secondary: #9CA3AF;
+    --primary: #10B981; /* Emerald/Turquoise */
+    --primary-hover: #059669;
+    --primary-glow: rgba(16, 185, 129, 0.15);
+    --border: rgba(255, 255, 255, 0.1);
+    --border-hover: rgba(255, 255, 255, 0.2);
+    --danger: #EF4444;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --radius: 20px;
+    --font: 'Outfit', sans-serif;
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
   }
 
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-color-scheme: light) {
     :root {
-      --bg: #121212;
-      --card: #1E1E1E;
-      --text: #FFFFFF;
-      --secondary: #BBBBBB;
-      --primary: #60A5FA;
-      --primary-hover: #3B82F6;
-      --border: #333333;
-      --border-hover: #444444;
-      --danger: #EF4444;
-      --success: #22C55E;
-      --warning: #EAB308;
+      --bg: #F4F6F9;
+      --card: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(0, 0, 0, 0.06);
+      --text: #1E293B;
+      --secondary: #64748B;
+      --primary: #10B981;
+      --primary-hover: #059669;
+      --primary-glow: rgba(16, 185, 129, 0.1);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-hover: rgba(0, 0, 0, 0.15);
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
     }
   }
 
@@ -51,121 +54,180 @@
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    transition: background 0.3s, color 0.3s;
   }
 
-  /* Layout */
-  .app { max-width: 800px; margin: 0 auto; padding: 24px 20px 100px; }
+  /* App Layout */
+  .app { max-width: 800px; margin: 0 auto; padding: 24px 20px 120px; }
   
-  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
-  .logo { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+  .logo { font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, #34D399, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  
+  .header-actions { display: flex; gap: 8px; }
   .advanced-btn { 
-    background: transparent; border: none; color: var(--secondary); font-size: 0.9rem; 
-    font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;
-    padding: 8px 12px; border-radius: 8px; font-family: var(--font);
+    background: var(--card); border: 1px solid var(--card-border); color: var(--text); font-size: 0.9rem; 
+    font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    padding: 10px 16px; border-radius: 12px; font-family: var(--font);
+    backdrop-filter: blur(12px); transition: all 0.2s;
   }
-  .advanced-btn:hover { background: var(--card); color: var(--text); }
+  .advanced-btn:hover { background: var(--border-hover); border-color: var(--primary); }
 
   /* Typography */
-  h1 { font-size: 2.2rem; font-weight: 700; line-height: 1.2; margin-bottom: 16px; text-align: center; }
-  p.subtitle { color: var(--secondary); text-align: center; margin-bottom: 40px; font-size: 1.05rem; }
+  h1 { font-size: 2.2rem; font-weight: 700; line-height: 1.25; margin-bottom: 12px; text-align: center; letter-spacing: -0.02em; }
+  p.subtitle { color: var(--secondary); text-align: center; margin-bottom: 40px; font-size: 1.1rem; font-weight: 400; }
+
+  /* Interactive Device Selector */
+  .my-device-name-container {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 16px 24px; max-width: 400px; margin: 0 auto 32px; text-align: center;
+    backdrop-filter: blur(12px); box-shadow: var(--shadow);
+  }
+  .my-device-name-container span { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary); display: block; margin-bottom: 6px; }
+  .my-device-name-container input {
+    background: rgba(0,0,0,0.1); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; font-family: var(--font); font-size: 1.1rem; font-weight: 600;
+    text-align: center; padding: 6px 12px; width: 100%; outline: none; transition: all 0.2s;
+  }
+  .my-device-name-container input:focus { border-color: var(--primary); background: rgba(0,0,0,0.2); }
 
   /* Buttons & Inputs */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 0 24px; border-radius: 12px; font-family: var(--font); font-weight: 600;
+    padding: 0 24px; border-radius: 14px; font-family: var(--font); font-weight: 600;
     font-size: 1rem; cursor: pointer; border: none; transition: all 0.2s; width: 100%;
-    min-height: 52px; text-decoration: none;
+    min-height: 52px; text-decoration: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
   .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { background: var(--primary-hover); }
-  @media (prefers-color-scheme: dark) { .btn-primary { color: #000; } }
-  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--card-border); backdrop-filter: blur(12px); }
   .btn-secondary:hover { border-color: var(--border-hover); background: var(--border); }
   .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #DC2626; }
 
   input[type="text"], textarea {
-    width: 100%; background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 16px; color: var(--text); font-family: var(--font);
-    font-size: 1.1rem; outline: none; transition: border-color 0.2s; min-height: 52px;
+    width: 100%; background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 16px; color: var(--text); font-family: var(--font);
+    font-size: 1.1rem; outline: none; transition: all 0.2s; min-height: 52px;
   }
-  input[type="text"]:focus, textarea:focus { border-color: var(--primary); }
+  input[type="text"]:focus, textarea:focus { border-color: var(--primary); background: rgba(0,0,0,0.1); }
   textarea { resize: vertical; min-height: 120px; }
 
-  /* Lobby */
+  /* Lobby Layout */
   .lobby-actions { display: flex; flex-direction: column; gap: 16px; max-width: 400px; margin: 0 auto; }
-  .lobby-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;
+  
+  /* Nearby Devices Panel */
+  .nearby-panel {
+    margin-top: 40px; text-align: center;
   }
-  .lobby-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-  .lobby-card h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 4px; }
-  .lobby-card p { color: var(--secondary); font-size: 0.9rem; }
+  .nearby-header {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 16px;
+  }
+  .radar-dot {
+    width: 8px; height: 8px; background: var(--primary); border-radius: 50%;
+    display: inline-block; animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.9); opacity: 0.6; }
+    50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 10px var(--primary); }
+    100% { transform: scale(0.9); opacity: 0.6; }
+  }
+  .nearby-list {
+    display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 0 auto;
+  }
+  .nearby-device-card {
+    display: flex; align-items: center; gap: 14px; background: var(--card);
+    border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 16px 20px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left; box-shadow: var(--shadow); backdrop-filter: blur(12px);
+  }
+  .nearby-device-card:hover { border-color: var(--primary); transform: translateY(-2px); background: rgba(25, 25, 45, 0.85); }
+  .device-icon { font-size: 1.5rem; }
+  .device-info { display: flex; flex-direction: column; }
+  .device-name { font-weight: 600; font-size: 1rem; color: var(--text); }
+  .device-sub { font-size: 0.8rem; color: var(--secondary); }
+  .nearby-empty { font-size: 0.9rem; color: var(--secondary); padding: 16px; }
 
   /* Modals */
   .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
-    backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center;
+    display: none; position: fixed; inset: 0; background: rgba(10, 10, 20, 0.75); 
+    backdrop-filter: blur(8px); z-index: 200; align-items: center; justify-content: center;
     padding: 20px;
   }
   .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .modal {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 24px;
-    padding: 32px; width: 100%; max-width: 400px; animation: slideUp 0.25s ease;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    background: var(--bg); border: 1px solid var(--card-border); border-radius: 24px;
+    padding: 32px; width: 100%; max-width: 400px; animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   }
-  @media (prefers-color-scheme: dark) { .modal { box-shadow: 0 10px 40px rgba(0,0,0,0.5); } }
-  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  .modal h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; text-align: center; }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; text-align: center; }
   .modal p { color: var(--secondary); font-size: 0.95rem; margin-bottom: 24px; text-align: center; line-height: 1.5; }
 
   .qr-wrapper { text-align: center; margin-bottom: 24px; display: none; }
-  .qr-wrapper img { width: 200px; height: 200px; border-radius: 12px; padding: 8px; background: #fff; }
+  .qr-wrapper img { width: 200px; height: 200px; border-radius: 16px; padding: 10px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
   
-  .code-display {
-    text-align: center; font-size: 2.5rem; font-weight: 700; letter-spacing: 0.1em;
-    color: var(--primary); margin-bottom: 24px; user-select: all;
+  .code-display-container {
+    display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 24px;
   }
+  .code-display {
+    font-size: 2.2rem; font-weight: 700; letter-spacing: 0.05em;
+    color: var(--primary); user-select: all; text-align: center;
+  }
+  .bubble-copy {
+    background: var(--card); border: 1px solid var(--card-border); color: var(--primary);
+    cursor: pointer; font-weight: 600; font-size: 0.85rem; padding: 6px 12px; border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .bubble-copy:hover { background: var(--primary-glow); }
 
-  .advanced-options { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
-  .advanced-options label { font-size: 0.85rem; font-weight: 600; color: var(--secondary); margin-bottom: 6px; display: block; }
-  .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text); font-size: 0.95rem; }
-
-  /* Local Network Warning */
   .local-warning {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px; margin-bottom: 24px; text-align: left; display: none;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 14px;
+    padding: 16px; margin-bottom: 24px; text-align: left; font-size: 0.9rem;
   }
   .local-warning h4 { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.95rem; }
   .local-warning summary { color: var(--primary); font-size: 0.9rem; cursor: pointer; font-weight: 500; margin-top: 8px; }
   .local-warning .details { font-size: 0.85rem; color: var(--secondary); margin-top: 8px; line-height: 1.5; }
   .local-warning input { min-height: 40px; font-size: 0.9rem; padding: 8px 12px; margin-top: 8px; }
 
-  /* Connected State */
+  /* Room View / Connected State */
   #room { display: none; }
-  .status-header { text-align: center; margin-bottom: 32px; }
+  .status-header { text-align: center; margin-bottom: 24px; }
   .status-indicator {
-    display: inline-flex; align-items: center; gap: 8px; font-size: 1.2rem; font-weight: 600;
-    padding: 12px 24px; background: var(--card); border-radius: 999px; border: 1px solid var(--border);
+    display: inline-flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 600;
+    padding: 10px 20px; background: var(--card); border-radius: 999px; border: 1px solid var(--card-border);
   }
-  .peer-name { display: block; font-size: 0.9rem; color: var(--secondary); margin-top: 8px; }
+  .peer-name { display: block; font-size: 0.95rem; color: var(--text); font-weight: 600; margin-top: 8px; }
   
-  /* Tabs - Desktop */
+  .badges-row {
+    margin-top: 8px; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    cursor: help; border: 1px solid var(--border); transition: all 0.2s;
+  }
+  .badge-local { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.2); }
+  .badge-internet { background: rgba(59, 130, 246, 0.1); color: #3B82F6; border-color: rgba(59, 130, 246, 0.2); }
+  .badge-relay { background: rgba(245, 158, 11, 0.1); color: var(--warning); border-color: rgba(245, 158, 11, 0.2); }
+  .badge-encrypted { background: rgba(139, 92, 246, 0.1); color: #8B5CF6; border-color: rgba(139, 92, 246, 0.2); }
+
+  /* Tabs Layout */
   .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
   .tab {
     flex: 1; padding: 12px; border-radius: 12px; font-family: var(--font); font-weight: 600;
-    font-size: 0.95rem; cursor: pointer; border: none; background: transparent; color: var(--secondary);
-    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 0.9rem; cursor: pointer; border: none; background: transparent; color: var(--secondary);
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
     min-height: 52px;
   }
-  .tab.active { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .tab.active { background: var(--card); color: var(--text); border: 1px solid var(--card-border); }
   .tab:hover:not(.active) { background: var(--card); }
 
-  /* Tabs - Mobile Bottom Nav */
   @media (max-width: 600px) {
     .tabs {
       position: fixed; bottom: 0; left: 0; right: 0; margin: 0;
-      background: var(--bg); border-top: 1px solid var(--border); padding: 8px 16px 24px;
+      background: var(--bg); border-top: 1px solid var(--border); padding: 8px 12px 24px;
       gap: 4px; z-index: 100;
     }
     .tab { flex-direction: column; gap: 4px; font-size: 0.75rem; min-height: 60px; padding: 8px; }
@@ -175,19 +237,20 @@
   .tab-panel { display: none; }
   .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
 
-  /* Files */
+  /* Files Transfer Panel */
   .drop-zone {
-    border: 2px dashed var(--border); border-radius: var(--radius); padding: 60px 24px;
+    border: 2px dashed var(--border); border-radius: var(--radius); padding: 50px 24px;
     text-align: center; cursor: pointer; transition: all 0.2s; background: var(--card);
+    box-shadow: var(--shadow); backdrop-filter: blur(12px);
   }
-  .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, transparent); }
-  .drop-zone h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: var(--primary-glow); }
+  .drop-zone h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
   .drop-zone p { font-size: 0.9rem; color: var(--secondary); }
   #file-input { display: none; }
 
   .transfers { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
   .transfer-item {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 16px;
     padding: 16px; display: flex; flex-direction: column; gap: 12px;
   }
   .transfer-header { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -197,41 +260,48 @@
   .progress-bar { height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s linear; }
 
-  /* Text & Messages */
+  /* Messages Panel */
   .text-actions { display: flex; gap: 12px; margin-top: 16px; }
   .received-texts { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
   .received-bubble {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 16px; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 16px;
+    padding: 16px; font-size: 0.95rem; line-height: 1.5; display: flex; flex-direction: column; gap: 8px;
   }
-  .bubble-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--secondary); margin-bottom: 8px; }
-  .bubble-copy { background: none; border: none; color: var(--primary); cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+  .bubble-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--secondary); }
 
-  /* Screen */
+  /* Screen and Camera Sharing Panel */
   .screen-preview {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    background: #000; border: 1px solid var(--card-border); border-radius: var(--radius);
     aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 16px;
+    position: relative; box-shadow: var(--shadow);
   }
   .screen-preview video { width: 100%; height: 100%; object-fit: contain; display: none; }
   .screen-placeholder { text-align: center; color: var(--secondary); font-size: 0.95rem; }
+  
+  .fullscreen-overlay-btn {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; z-index: 10; backdrop-filter: blur(4px); transition: all 0.2s;
+    display: none;
+  }
+  .fullscreen-overlay-btn:hover { background: rgba(0,0,0,0.8); }
 
-  /* Toast & Logs */
+  /* Toast Messages */
   #toast {
     position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px);
     background: var(--text); color: var(--bg); border-radius: 999px;
     padding: 12px 24px; font-size: 0.95rem; font-weight: 600; opacity: 0;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 300; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 300; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
   }
   #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
   .log-wrap {
-    display: none; background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    display: none; background: var(--card); border: 1px solid var(--card-border); border-radius: 12px;
     height: 150px; overflow-y: auto; padding: 12px; margin-top: 24px; font-family: monospace; font-size: 0.75rem;
   }
   .log-wrap.show { display: block; }
   .log-line { color: var(--secondary); margin-bottom: 4px; }
-  .log-line.error { color: var(--danger); }
-  .log-line.warn { color: var(--warning); }
 </style>
 </head>
 <body>
@@ -239,17 +309,37 @@
 <div class="app">
   <header>
     <div class="logo">PeerDrop</div>
-    <button class="advanced-btn" onclick="openAdvancedModal()">⚙️ Advanced</button>
+    <div class="header-actions">
+      <button id="install-pwa-btn" class="advanced-btn" style="display: none; color: var(--primary);" onclick="installPWA()">📲 Install</button>
+      <button class="advanced-btn" onclick="openAdvancedModal()">⚙️ Settings</button>
+    </div>
   </header>
 
   <!-- LOBBY -->
   <div id="lobby">
-    <h1>PeerDrop lets you securely send files, messages, and your screen directly between devices without uploading them to the cloud.</h1>
-    <p class="subtitle">Fast, private, and works anywhere.</p>
+    <h1>Direct peer-to-peer file, message & video sharing.</h1>
+    <p class="subtitle">No cloud storage. High privacy. Fast local networking.</p>
+
+    <!-- My Device Name Selector -->
+    <div class="my-device-name-container">
+      <span>My Device Identity</span>
+      <input type="text" id="my-device-name-input" placeholder="e.g. Galaxy Phone" onchange="updateMyDeviceName(this.value)" />
+    </div>
 
     <div class="lobby-actions">
       <button class="btn btn-primary" onclick="openSendModal()">Start Sharing</button>
       <button class="btn btn-secondary" onclick="openReceiveModal()">Join a Device</button>
+    </div>
+
+    <!-- Nearby Devices discovery -->
+    <div class="nearby-panel">
+      <div class="nearby-header">
+        <span class="radar-dot"></span>
+        <span>Nearby Devices</span>
+      </div>
+      <div id="nearby-list" class="nearby-list">
+        <div class="nearby-empty">Searching for nearby devices on the same Wi-Fi...</div>
+      </div>
     </div>
   </div>
 
@@ -260,25 +350,31 @@
         <span id="status-icon">🟡</span> <span id="status-text">Preparing connection...</span>
       </div>
       <div class="peer-name" id="peer-name-display"></div>
+      <div class="badges-row">
+        <span id="connection-type-badge" class="badge" style="display: none;"></span>
+        <span id="connection-quality-badge" class="badge" style="display: none;"></span>
+        <span id="encryption-badge" class="badge badge-encrypted" style="display: none;">🔒 End-to-End Encrypted</span>
+      </div>
     </div>
 
     <div class="tabs">
       <button class="tab active" data-panel="files" onclick="switchTab(this)">📁 Files</button>
       <button class="tab" data-panel="text" onclick="switchTab(this)">💬 Messages</button>
       <button class="tab" data-panel="screen" onclick="switchTab(this)">🖥 Share Screen</button>
+      <button class="tab" data-panel="camera" onclick="switchTab(this)">📷 Share Camera</button>
     </div>
 
-    <!-- FILES -->
+    <!-- FILES PANEL -->
     <div class="tab-panel active" id="panel-files">
       <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
         <h3>Select or drop files to send</h3>
-        <p>Any size, any format.</p>
+        <p>Any size, any format. Transmitted directly.</p>
       </div>
       <input type="file" id="file-input" multiple/>
       <div class="transfers" id="transfers"></div>
     </div>
 
-    <!-- TEXT -->
+    <!-- MESSAGES PANEL -->
     <div class="tab-panel" id="panel-text">
       <textarea id="text-input" placeholder="Type a message or paste a link..."></textarea>
       <div class="text-actions">
@@ -287,16 +383,28 @@
       <div class="received-texts" id="received-texts"></div>
     </div>
 
-    <!-- SCREEN -->
+    <!-- SCREEN PANEL -->
     <div class="tab-panel" id="panel-screen">
-      <div class="screen-preview" id="screen-preview">
+      <div class="screen-preview">
         <video id="screen-video" autoplay playsinline></video>
+        <button class="fullscreen-overlay-btn" onclick="enterFullscreen('screen-video')">⛶ Fullscreen</button>
         <div class="screen-placeholder" id="screen-placeholder">No screen shared yet</div>
       </div>
       <button class="btn btn-primary" id="share-screen-btn" onclick="toggleScreenShare()">Share My Screen</button>
     </div>
 
+    <!-- CAMERA PANEL -->
+    <div class="tab-panel" id="panel-camera">
+      <div class="screen-preview">
+        <video id="camera-video" autoplay playsinline></video>
+        <button class="fullscreen-overlay-btn" onclick="enterFullscreen('camera-video')">⛶ Fullscreen</button>
+        <div class="screen-placeholder" id="camera-placeholder">No camera shared yet</div>
+      </div>
+      <button class="btn btn-primary" id="share-camera-btn" onclick="toggleCameraShare()">Share My Camera</button>
+    </div>
+
     <div class="log-wrap" id="room-log"></div>
+    <button class="btn btn-danger" onclick="leaveRoom()" style="margin-top: 32px; min-height: 48px;">Disconnect</button>
   </div>
 </div>
 
@@ -306,27 +414,31 @@
 <div class="modal-overlay" id="modal-send">
   <div class="modal">
     <h2>Ready to Connect</h2>
-    <p>Scan this QR code with your other device or enter the code below.</p>
+    <p>Scan this QR code with your other device or enter the room code.</p>
     
     <div class="qr-wrapper" id="qr-container">
       <img id="qr-code-img" src="" alt="QR Code">
     </div>
 
-    <div class="code-display" id="share-code-display">----</div>
+    <div class="code-display-container">
+      <div class="code-display" id="share-code-display">----</div>
+      <button class="bubble-copy" onclick="copyRoomCode()" style="margin-left: 8px;">📋 Copy</button>
+    </div>
 
-    <div class="local-warning" id="local-warning">
-      <h4>📶 Using this on another device?</h4>
+    <button class="btn btn-primary" onclick="shareRoomLink()" style="margin-bottom: 12px; min-height: 44px;">📤 Share Link</button>
+    <button class="btn btn-secondary" onclick="closeModal('modal-send'); leaveRoom()">Cancel</button>
+
+    <div class="local-warning" id="local-warning" style="margin-top: 24px; display: none;">
+      <h4>📶 Connection tips</h4>
       <details>
-        <summary>Need help connecting?</summary>
+        <summary>Need custom LAN IP?</summary>
         <div class="details">
-          Ensure both devices are on the same Wi-Fi. Enter your computer's local address below to generate the correct QR code:
+          If devices are on the same Wi-Fi but QR fails, enter your computer's local address below to generate a direct LAN QR code:
           <input type="text" id="custom-base-url" placeholder="e.g. http://192.168.1.50:3000">
           <button class="btn btn-secondary" style="margin-top:8px; min-height: 40px;" onclick="applyCustomBaseUrl()">Update QR Code</button>
         </div>
       </details>
     </div>
-
-    <button class="btn btn-secondary" onclick="closeModal('modal-send'); leaveRoom()">Cancel</button>
   </div>
 </div>
 
@@ -334,39 +446,59 @@
 <div class="modal-overlay" id="modal-receive">
   <div class="modal">
     <h2>Receive Files</h2>
-    <p>Enter the connection code shown on the other device.</p>
-    <input type="text" id="join-code-input" maxlength="9" placeholder="e.g. FIRE-1234" oninput="this.value=this.value.toUpperCase()" style="text-align: center; margin-bottom: 24px; font-weight: 700; font-size: 1.5rem; letter-spacing: 0.1em;"/>
+    <p>Enter the room code shown on the sending device.</p>
+    <input type="text" id="join-code-input" maxlength="6" placeholder="e.g. 8XQ4" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z2-9]/g, '')" style="text-align: center; margin-bottom: 24px; font-weight: 700; font-size: 1.5rem; letter-spacing: 0.1em;"/>
     <button class="btn btn-primary" id="join-btn" onclick="joinRoom()" style="margin-bottom: 12px;">Connect</button>
     <button class="btn btn-secondary" onclick="closeModal('modal-receive')">Cancel</button>
   </div>
 </div>
 
-<!-- Advanced Modal -->
+<!-- Invite Received Modal -->
+<div class="modal-overlay" id="modal-invite">
+  <div class="modal">
+    <h2 style="font-size: 1.5rem; margin-bottom: 8px;">📶 Connection Request</h2>
+    <p id="invite-text" style="font-size: 1rem; margin-bottom: 24px;">Device wants to connect with you.</p>
+    <button class="btn btn-primary" id="invite-accept-btn" onclick="acceptInvite()" style="margin-bottom: 12px;">Accept</button>
+    <button class="btn btn-secondary" onclick="declineInvite()">Decline</button>
+  </div>
+</div>
+
+<!-- File Confirmation Modal -->
+<div class="modal-overlay" id="modal-file-request">
+  <div class="modal">
+    <h2 style="font-size: 1.5rem; margin-bottom: 8px;">📂 Incoming File</h2>
+    <p id="file-request-text" style="font-size: 1rem; margin-bottom: 24px; text-align: center; color: var(--text);">Device wants to send a file to you.</p>
+    <button class="btn btn-primary" onclick="acceptFileRequest()" style="margin-bottom: 12px;">Accept</button>
+    <button class="btn btn-secondary" onclick="declineFileRequest()">Decline</button>
+  </div>
+</div>
+
+<!-- Settings / Advanced Modal -->
 <div class="modal-overlay" id="modal-advanced">
   <div class="modal">
-    <h2>Advanced Settings</h2>
+    <h2>Settings</h2>
     
-    <div class="advanced-options">
-      <label class="checkbox-label">
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+      <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.95rem;">
         <input type="checkbox" id="show-logs-cb" onchange="toggleLogs()">
-        Show connection details
+        Show WebRTC debug logs
       </label>
 
       <div>
-        <label>TURN Server URL</label>
+        <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); display: block; margin-bottom: 6px;">TURN Server URL</label>
         <input type="text" id="turn-url-input" placeholder="auto">
       </div>
       <div>
-        <label>TURN Username</label>
+        <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); display: block; margin-bottom: 6px;">TURN Username</label>
         <input type="text" id="turn-user-input" placeholder="optional">
       </div>
       <div>
-        <label>TURN Password</label>
+        <label style="font-size: 0.85rem; font-weight: 600; color: var(--secondary); display: block; margin-bottom: 6px;">TURN Password</label>
         <input type="text" id="turn-cred-input" placeholder="optional">
       </div>
     </div>
 
-    <button class="btn btn-primary" onclick="saveNetworkSettings()" style="margin-bottom: 12px;">Save</button>
+    <button class="btn btn-primary" onclick="saveNetworkSettings()" style="margin-bottom: 12px;">Save Settings</button>
     <button class="btn btn-secondary" onclick="closeModal('modal-advanced')">Close</button>
   </div>
 </div>
@@ -376,9 +508,9 @@
 <script>
 /* ══════════════════════════════════════════════════════════════════════
    STATE & CONSTANTS
-══════════════════════════════════════════════════════════════════════ */
+   ══════════════════════════════════════════════════════════════════════ */
 const IS_MOBILE = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-const MY_DEVICE_NAME = generateDeviceName();
+let MY_DEVICE_NAME = loadOrGenerateDeviceName();
 
 const STATE = {
   ws: null,
@@ -389,11 +521,21 @@ const STATE = {
   dataChannel: null,
   screenStream: null,
   screenSender: null,
+  cameraStream: null,
+  cameraSender: null,
   pendingIce: [],
   connected: false,
   peerDeviceName: "Unknown Device",
-  transferStats: {} // tracking bytes/sec
+  transferStats: {},
+  pendingSends: new Map(),
+  incomingFileMeta: null,
+  heartbeatInterval: null,
+  statsInterval: null,
+  wakeLock: null
 };
+
+// Client-side Local IP Discovery State
+let localIpExtracted = null;
 
 const IS_LOCAL_HOST = window.location.hostname === "localhost" || 
                       window.location.hostname === "127.0.0.1" || 
@@ -406,27 +548,69 @@ const WS_URL = (IS_LOCAL_HOST && window.location.protocol !== "file:")
   : `wss://peerdrop-production-7711.up.railway.app`;
 
 window.addEventListener('DOMContentLoaded', async () => {
-  if (IS_MOBILE) {
-    const screenTab = document.querySelector('[data-panel="screen"]');
-    if (screenTab) screenTab.innerHTML = "📷 Camera";
-    document.getElementById("share-screen-btn").textContent = "Share Camera";
-  }
+  // Discover local IP client-side for QR codes
+  startLocalIpDiscovery();
 
+  // Populate Device Name Input
+  document.getElementById("my-device-name-input").value = MY_DEVICE_NAME;
+
+  // Auto-fill room parameters if in URL query
   const urlParams = new URLSearchParams(window.location.search);
   const roomParam = urlParams.get('room');
   if (roomParam) {
     await openReceiveModal(roomParam);
     await joinRoom(); 
   }
+
+  // Connect websocket immediately for nearby device scanning
+  try {
+    await connectWS();
+    sendSignal({ type: "register", name: MY_DEVICE_NAME });
+  } catch (e) {
+    console.warn("WS automatic setup for nearby discovery failed:", e);
+  }
 });
 
 /* ══════════════════════════════════════════════════════════════════════
-   UTILS & UI HELPERS
-══════════════════════════════════════════════════════════════════════ */
-function generateDeviceName() {
-  const os = IS_MOBILE ? (navigator.userAgent.includes("Android") ? "Android" : "iPhone") : "PC";
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `${os}-${num}`;
+   UTILS & PLATFORM HELPERS
+   ══════════════════════════════════════════════════════════════════════ */
+function getPlatformName() {
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return "Android";
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "iPhone";
+  if (/mac/i.test(ua)) return "Mac";
+  if (/win/i.test(ua)) return "Windows";
+  if (/linux/i.test(ua)) return "Linux";
+  return "Device";
+}
+
+function loadOrGenerateDeviceName() {
+  let name = localStorage.getItem("peerdrop_device_name");
+  if (!name) {
+    const platform = getPlatformName();
+    const num = Math.floor(1000 + Math.random() * 9000);
+    name = `${platform}-${num}`;
+    localStorage.setItem("peerdrop_device_name", name);
+  }
+  return name;
+}
+
+function updateMyDeviceName(val) {
+  val = val.trim();
+  if (val) {
+    MY_DEVICE_NAME = val;
+    localStorage.setItem("peerdrop_device_name", val);
+    sendSignal({ type: "register", name: MY_DEVICE_NAME });
+    toast("Device name saved");
+  }
+}
+
+function getDeviceIcon(name) {
+  const lower = name.toLowerCase();
+  if (lower.includes("android") || lower.includes("phone") || lower.includes("ios") || lower.includes("iphone")) return "📱";
+  if (lower.includes("tablet") || lower.includes("ipad")) return "📟";
+  if (lower.includes("tv")) return "📺";
+  return "💻";
 }
 
 let toastTimer;
@@ -472,16 +656,101 @@ function switchTab(btn) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   SIGNALING
-══════════════════════════════════════════════════════════════════════ */
+   CLIENT-SIDE LOCAL IP DISCOVERY
+   ══════════════════════════════════════════════════════════════════════ */
+async function startLocalIpDiscovery() {
+  try {
+    const tempPc = new RTCPeerConnection({ iceServers: [] });
+    tempPc.createDataChannel("");
+    tempPc.createOffer().then(o => tempPc.setLocalDescription(o));
+    
+    tempPc.onicecandidate = (e) => {
+      if (e.candidate && e.candidate.candidate) {
+        const parts = e.candidate.candidate.split(" ");
+        if (parts.length >= 8) {
+          const ip = parts[4];
+          const type = parts[7];
+          if (type === "host" && /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+            if (ip !== "127.0.0.1" && !ip.startsWith("0.")) {
+              localIpExtracted = ip;
+              tempPc.close();
+              updateQrCode();
+            }
+          }
+        }
+      }
+    };
+    setTimeout(() => tempPc.close(), 2000);
+  } catch (err) {
+    console.warn("Local IP discovery failed:", err);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SCREEN WAKE LOCK
+   ══════════════════════════════════════════════════════════════════════ */
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      STATE.wakeLock = await navigator.wakeLock.request('screen');
+      log("Screen Wake Lock activated");
+    }
+  } catch (err) {
+    console.warn(`Wake Lock failed: ${err.message}`);
+  }
+}
+
+function releaseWakeLock() {
+  if (STATE.wakeLock !== null) {
+    STATE.wakeLock.release().then(() => {
+      STATE.wakeLock = null;
+      log("Screen Wake Lock released");
+    }).catch(() => {});
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PWA INSTALL BUTTON HANDLER
+   ══════════════════════════════════════════════════════════════════════ */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById("install-pwa-btn");
+  if (btn) btn.style.display = "inline-flex";
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then((choice) => {
+    deferredPrompt = null;
+    const btn = document.getElementById("install-pwa-btn");
+    if (btn) btn.style.display = "none";
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SIGNALING & WEBSOCKETS
+   ══════════════════════════════════════════════════════════════════════ */
 function connectWS() {
   return new Promise((resolve, reject) => {
     if (STATE.ws && STATE.ws.readyState === WebSocket.OPEN) return resolve(STATE.ws);
     const ws = new WebSocket(WS_URL);
     STATE.ws = ws;
-    ws.onopen  = () => { log("Signaling connected"); resolve(ws); };
+    ws.onopen  = () => { 
+      log("Signaling connected"); 
+      // Heartbeat pings to prevent timeout
+      STATE.heartbeatInterval = setInterval(() => {
+        sendSignal({ type: "ping" });
+      }, 20000);
+      resolve(ws); 
+    };
     ws.onerror = ()  => { log("Signaling failed", "error"); reject(); };
-    ws.onclose = ()  => { log("Signaling disconnected", "warn"); };
+    ws.onclose = ()  => { 
+      log("Signaling disconnected", "warn"); 
+      clearInterval(STATE.heartbeatInterval);
+    };
     ws.onmessage = (e) => handleSignal(JSON.parse(e.data));
   });
 }
@@ -492,6 +761,10 @@ function sendSignal(data) {
 
 async function handleSignal(msg) {
   switch (msg.type) {
+    case "nearby-devices":
+      renderNearbyDevices(msg.devices || []);
+      break;
+
     case "created":
       STATE.peerId = msg.peerId;
       STATE.roomCode = msg.roomCode;
@@ -540,6 +813,18 @@ async function handleSignal(msg) {
       }
       break;
 
+    case "invite-received":
+      STATE.incomingInviteRoomCode = msg.roomCode;
+      document.getElementById("invite-text").textContent = `${msg.senderName} wants to connect with you.`;
+      openModal("modal-invite");
+      break;
+
+    case "invite-declined":
+      toast("Connection request declined");
+      closeModal("modal-send");
+      leaveRoom();
+      break;
+
     case "peer-left":
       updateStatus("🔴", "Connection lost", "error");
       toast("Device disconnected");
@@ -561,9 +846,66 @@ async function flushIceCandidates() {
   STATE.pendingIce = [];
 }
 
+function renderNearbyDevices(devices) {
+  const container = document.getElementById("nearby-list");
+  container.innerHTML = "";
+  if (devices.length === 0) {
+    container.innerHTML = `<div class="nearby-empty">Searching for nearby devices on the same Wi-Fi...</div>`;
+    return;
+  }
+
+  devices.forEach(device => {
+    const icon = getDeviceIcon(device.name);
+    const card = document.createElement("div");
+    card.className = "nearby-device-card";
+    card.onclick = () => inviteDevice(device.peerId);
+    card.innerHTML = `
+      <span class="device-icon">${icon}</span>
+      <div class="device-info">
+        <span class="device-name">${device.name}</span>
+        <span class="device-sub">Tap to request connection</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+async function inviteDevice(targetPeerId) {
+  toast("Sending connection invitation...");
+  openModal("modal-send");
+  document.getElementById("share-code-display").textContent = "----";
+  try {
+    await connectWS();
+    sendSignal({ type: "invite", targetPeerId });
+  } catch (err) {
+    toast("Invitation failed");
+    closeModal("modal-send");
+  }
+}
+
+async function acceptInvite() {
+  const code = STATE.incomingInviteRoomCode;
+  closeModal("modal-invite");
+  if (!code) return;
+  try {
+    await connectWS();
+    sendSignal({ type: "join", roomCode: code });
+  } catch {
+    toast("Network error");
+  }
+}
+
+function declineInvite() {
+  const code = STATE.incomingInviteRoomCode;
+  closeModal("modal-invite");
+  if (!code) return;
+  sendSignal({ type: "decline", roomCode: code });
+  STATE.incomingInviteRoomCode = null;
+}
+
 /* ══════════════════════════════════════════════════════════════════════
-   WEBRTC
-══════════════════════════════════════════════════════════════════════ */
+   WEBRTC DATA CHANNEL & STATS
+   ══════════════════════════════════════════════════════════════════════ */
 function getIceServers() {
   const url = localStorage.getItem("peerdrop_turn_url");
   const user = localStorage.getItem("peerdrop_turn_username");
@@ -585,19 +927,25 @@ async function initPeerConnection() {
     log(`Connection state: ${s}`);
     if (s === "connected") {
       STATE.connected = true;
-      updateStatus("🟢", "Ready to send", "success");
+      updateStatus("🟢", "Connected", "success");
       closeModal("modal-send");
       closeModal("modal-receive");
       document.getElementById("lobby").style.display = "none";
       document.getElementById("room").style.display = "block";
-      document.getElementById("peer-name-display").textContent = "Connected to another device";
-      // Send our name
+      
+      document.getElementById("encryption-badge").style.display = "inline-flex";
+      document.getElementById("encryption-badge").setAttribute("title", "Only connected devices can read this data.");
+
+      // Start periodic WebRTC statistics query for quality & network type
+      STATE.statsInterval = setInterval(updateConnectionStats, 2000);
+
+      // Inform peer of our customized name
       if (STATE.dataChannel && STATE.dataChannel.readyState === "open") {
         STATE.dataChannel.send(JSON.stringify({ type: "hello", name: MY_DEVICE_NAME }));
       }
     } else if (s === "failed" || s === "disconnected") {
-      updateStatus("🔴", "Connection failed", "error");
-      toast("Connection failed");
+      updateStatus("🔴", "Connection lost", "error");
+      toast("Connection lost");
       leaveRoom();
     }
   };
@@ -608,11 +956,21 @@ async function initPeerConnection() {
   };
 
   STATE.pc.ontrack = (e) => {
-    const vid = document.getElementById("screen-video");
-    vid.srcObject = e.streams[0];
-    vid.style.display = "block";
-    vid.play().catch(() => {});
+    // Bind the incoming stream to both screen and camera players for viewing
+    const vidScreen = document.getElementById("screen-video");
+    const vidCamera = document.getElementById("camera-video");
+
+    vidScreen.srcObject = e.streams[0];
+    vidScreen.style.display = "block";
     document.getElementById("screen-placeholder").style.display = "none";
+    vidScreen.parentElement.querySelector(".fullscreen-overlay-btn").style.display = "block";
+
+    vidCamera.srcObject = e.streams[0];
+    vidCamera.style.display = "block";
+    document.getElementById("camera-placeholder").style.display = "none";
+    vidCamera.parentElement.querySelector(".fullscreen-overlay-btn").style.display = "block";
+
+    toast("Video stream started");
   };
 }
 
@@ -639,12 +997,28 @@ function wireDataChannel() {
       } else if (msg.type === "text") {
         renderReceivedText(msg.content);
         toast("Message received");
-      } else if (msg.type === "file-meta") {
-        recvMeta = msg; recvBufs = []; recvBytes = 0;
-        STATE.transferStats[msg.id] = { start: Date.now(), lastBytes: 0, lastTime: Date.now() };
-        addTransferUI(msg.name, msg.size, "receive", msg.id);
+      } else if (msg.type === "file-meta-request") {
+        // Peer wants to send a file - request explicit user approval
+        STATE.incomingFileMeta = msg;
+        document.getElementById("file-request-text").innerHTML = `
+          <strong>${STATE.peerDeviceName}</strong> wants to send:<br/>
+          <span style="font-weight: 700; color: var(--primary); font-size: 1.1rem; display: block; margin: 10px 0; word-break: break-all;">${msg.name}</span>
+          Size: ${formatSize(msg.size)}
+        `;
+        openModal("modal-file-request");
+      } else if (msg.type === "file-accepted") {
+        // Peer accepted file transfer request - begin streaming
+        startFileTransferTransmission(msg.id);
+      } else if (msg.type === "file-declined") {
+        // Peer rejected file transfer request
+        const uiStats = document.getElementById(`tfs-${msg.id}`);
+        if (uiStats) uiStats.textContent = "Declined by peer";
+        const uiFill = document.getElementById(`tff-${msg.id}`);
+        if (uiFill) uiFill.style.backgroundColor = "var(--danger)";
+        STATE.pendingSends.delete(msg.id);
       }
     } else {
+      // Chunk binary payload arriving
       recvBufs.push(e.data);
       recvBytes += e.data.byteLength;
       updateTransferUI(recvMeta.id, recvMeta.size, recvBytes);
@@ -653,21 +1027,97 @@ function wireDataChannel() {
         const blob = new Blob(recvBufs, { type: recvMeta.mime });
         finishTransferUI(recvMeta.id, blob, recvMeta.name);
         recvMeta = null; recvBufs = []; recvBytes = 0;
+        releaseWakeLock();
       }
     }
   };
 }
 
+async function updateConnectionStats() {
+  if (!STATE.pc || STATE.pc.connectionState !== "connected") return;
+
+  try {
+    const stats = await STATE.pc.getStats();
+    let activePair = null;
+    
+    stats.forEach(report => {
+      if (report.type === "candidate-pair" && (report.nominated || report.state === "in-progress" || report.bytesSent > 0)) {
+        if (!activePair || report.bytesSent > activePair.bytesSent) {
+          activePair = report;
+        }
+      }
+    });
+
+    if (activePair) {
+      const localCand = stats.get(activePair.localCandidateId);
+      const remoteCand = stats.get(activePair.remoteCandidateId);
+
+      // Determine Connection Type
+      if (localCand && remoteCand) {
+        const localType = localCand.candidateType;
+        const remoteType = remoteCand.candidateType;
+
+        let badgeText = "🌍 Internet Connection";
+        let badgeClass = "badge-internet";
+        let tooltip = "Connected via public IP address over the internet.";
+
+        if (localType === "relay" || remoteType === "relay") {
+          badgeText = "🔄 Relay Connection";
+          badgeClass = "badge-relay";
+          tooltip = "Routing traffic through TURN fallback server.";
+        } else if (localType === "host" && remoteType === "host") {
+          badgeText = "🟢 Local Network";
+          badgeClass = "badge-local";
+          tooltip = "Direct P2P local Wi-Fi transfer. Data stays on your LAN.";
+        }
+
+        const typeEl = document.getElementById("connection-type-badge");
+        typeEl.className = `badge ${badgeClass}`;
+        typeEl.textContent = badgeText;
+        typeEl.setAttribute("title", tooltip);
+        typeEl.style.display = "inline-flex";
+      }
+
+      // Determine Connection Quality based on RTT
+      let rtt = activePair.currentRoundTripTime; 
+      if (rtt !== undefined) {
+        rtt = rtt * 1000; // to ms
+        let qualText = "🟢 Excellent";
+        let tooltip = `Latency is low (${rtt.toFixed(0)}ms). Connection speed is optimal.`;
+
+        if (rtt > 200) {
+          qualText = "🔴 Poor";
+          tooltip = `Latency is high (${rtt.toFixed(0)}ms). Transfers may be slow.`;
+        } else if (rtt > 50) {
+          qualText = "🟡 Good";
+          tooltip = `Latency is moderate (${rtt.toFixed(0)}ms).`;
+        }
+
+        const qualEl = document.getElementById("connection-quality-badge");
+        qualEl.className = "badge";
+        qualEl.textContent = `📶 ${qualText}`;
+        qualEl.setAttribute("title", tooltip);
+        qualEl.style.display = "inline-flex";
+      }
+    }
+  } catch (err) {
+    console.error("Error reading RTC stats:", err);
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════════════
-   ACTIONS
-══════════════════════════════════════════════════════════════════════ */
+   ACTIONS & ROOM CONNECTIVITY
+   ══════════════════════════════════════════════════════════════════════ */
 async function openSendModal() {
   openModal("modal-send");
   document.getElementById("share-code-display").textContent = "----";
   try {
     await connectWS();
     sendSignal({ type: "create" });
-  } catch { toast("Network error"); closeModal("modal-send"); }
+  } catch { 
+    toast("Network connection failed"); 
+    closeModal("modal-send"); 
+  }
 }
 
 async function openReceiveModal(initialCode) {
@@ -679,29 +1129,53 @@ async function openReceiveModal(initialCode) {
 
 async function joinRoom() {
   const code = document.getElementById("join-code-input").value.trim().toUpperCase();
-  if (code.length < 4) return toast("Enter a valid code");
+  if (code.length < 4) return toast("Enter a valid 4-character code");
   const btn = document.getElementById("join-btn");
   btn.disabled = true; btn.textContent = "Connecting...";
   try {
     await connectWS();
     sendSignal({ type: "join", roomCode: code });
-  } catch { toast("Network error"); btn.disabled = false; btn.textContent = "Connect"; }
+  } catch { 
+    toast("Network error"); 
+    btn.disabled = false; btn.textContent = "Connect"; 
+  }
 }
 
 function leaveRoom() {
+  // Release wake lock and clear stats updates
+  releaseWakeLock();
+  clearInterval(STATE.statsInterval);
+
   if (STATE.pc) { STATE.pc.close(); STATE.pc = null; }
-  if (STATE.ws) { STATE.ws.close(); STATE.ws = null; }
   if (STATE.screenStream) { STATE.screenStream.getTracks().forEach(t => t.stop()); STATE.screenStream = null; }
-  STATE.connected = false; STATE.roomCode = null;
+  if (STATE.cameraStream) { STATE.cameraStream.getTracks().forEach(t => t.stop()); STATE.cameraStream = null; }
+  
+  STATE.connected = false; 
+  STATE.roomCode = null;
+  STATE.pendingSends.clear();
+
   document.getElementById("lobby").style.display = "block";
   document.getElementById("room").style.display = "none";
   document.getElementById("transfers").innerHTML = "";
   document.getElementById("received-texts").innerHTML = "";
+  document.getElementById("connection-type-badge").style.display = "none";
+  document.getElementById("connection-quality-badge").style.display = "none";
+  document.getElementById("encryption-badge").style.display = "none";
+  
+  // Hide fullscreen media overlays
+  document.querySelectorAll(".fullscreen-overlay-btn").forEach(btn => btn.style.display = "none");
+  document.getElementById("screen-video").style.display = "none";
+  document.getElementById("screen-placeholder").style.display = "block";
+  document.getElementById("camera-video").style.display = "none";
+  document.getElementById("camera-placeholder").style.display = "block";
+
+  // Re-register to get nearby list active
+  sendSignal({ type: "register", name: MY_DEVICE_NAME });
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   FILE TRANSFER & UI
-══════════════════════════════════════════════════════════════════════ */
+   FILE TRANSFERS & APPROVAL FLOW
+   ══════════════════════════════════════════════════════════════════════ */
 const CHUNK_SIZE = 64 * 1024; // 64 KB
 
 document.getElementById("drop-zone").addEventListener("dragover", (e) => { e.preventDefault(); e.currentTarget.classList.add("dragover"); });
@@ -712,26 +1186,82 @@ document.getElementById("file-input").addEventListener("change", (e) => { [...e.
 async function sendFile(file) {
   if (!STATE.connected) return toast("Not connected");
   const id = crypto.randomUUID();
-  STATE.dataChannel.send(JSON.stringify({ type: "file-meta", id, name: file.name, size: file.size, mime: file.type }));
+  
+  // Store file until target accepts
+  STATE.pendingSends.set(id, file);
+
+  // Send P2P file meta transfer request
+  STATE.dataChannel.send(JSON.stringify({ 
+    type: "file-meta-request", 
+    id, 
+    name: file.name, 
+    size: file.size, 
+    mime: file.type 
+  }));
+
+  // Show pending in transfer list
   addTransferUI(file.name, file.size, "send", id);
+  document.getElementById(`tfs-${id}`).textContent = "Waiting for peer approval...";
+}
+
+function acceptFileRequest() {
+  closeModal("modal-file-request");
+  const meta = STATE.incomingFileMeta;
+  if (!meta) return;
+
+  // Setup buffer objects
+  recvMeta = meta;
+  recvBufs = [];
+  recvBytes = 0;
+
+  STATE.transferStats[meta.id] = { start: Date.now(), lastBytes: 0, lastTime: Date.now() };
+  addTransferUI(meta.name, meta.size, "receive", meta.id);
+  
+  // Send acceptance response to trigger file stream
+  STATE.dataChannel.send(JSON.stringify({ type: "file-accepted", id: meta.id }));
+  requestWakeLock();
+}
+
+function declineFileRequest() {
+  closeModal("modal-file-request");
+  const meta = STATE.incomingFileMeta;
+  if (!meta) return;
+  
+  // Inform sender of declination
+  STATE.dataChannel.send(JSON.stringify({ type: "file-declined", id: meta.id }));
+  STATE.incomingFileMeta = null;
+}
+
+function startFileTransferTransmission(id) {
+  const file = STATE.pendingSends.get(id);
+  if (!file) return;
+
+  requestWakeLock();
   STATE.transferStats[id] = { start: Date.now(), lastBytes: 0, lastTime: Date.now() };
+  document.getElementById(`tfs-${id}`).textContent = "Sending...";
 
   const reader = new FileReader();
   let offset = 0;
   
   const sendChunk = () => {
+    if (!STATE.connected) return;
     const slice = file.slice(offset, offset + CHUNK_SIZE);
     reader.readAsArrayBuffer(slice);
   };
   
   reader.onload = (e) => {
+    if (STATE.dataChannel.readyState !== "open") return;
     STATE.dataChannel.send(e.target.result);
     offset += e.target.result.byteLength;
     updateTransferUI(id, file.size, offset);
     
     if (offset < file.size) {
-      if (STATE.dataChannel.bufferedAmount > 16 * 1024 * 1024) setTimeout(sendChunk, 50); // 16MB backpressure
+      if (STATE.dataChannel.bufferedAmount > 16 * 1024 * 1024) setTimeout(sendChunk, 50); // backpressure
       else sendChunk();
+    } else {
+      // Completed sending
+      STATE.pendingSends.delete(id);
+      releaseWakeLock();
     }
   };
   sendChunk();
@@ -745,9 +1275,10 @@ function formatSize(b) {
 }
 
 function formatTime(s) {
-  if (s < 60) return Math.round(s) + " seconds";
+  if (s < 60) return Math.round(s) + "s";
   const m = Math.floor(s / 60);
-  return m + (m === 1 ? " minute" : " minutes");
+  const rem = Math.round(s % 60);
+  return `${m}m ${rem}s`;
 }
 
 function addTransferUI(name, size, dir, id) {
@@ -774,12 +1305,20 @@ function updateTransferUI(id, total, current) {
   document.getElementById(`tff-${id}`).style.width = `${pct}%`;
 
   const stats = STATE.transferStats[id];
+  if (!stats) return;
+
   const now = Date.now();
-  if (now - stats.lastTime > 1000) {
-    const bytesPerSec = (current - stats.lastBytes) / ((now - stats.lastTime) / 1000);
-    const etaSecs = (total - current) / bytesPerSec;
+  if (now - stats.lastTime > 500) {
+    const bytesSentSinceLast = current - stats.lastBytes;
+    const timeSinceLast = (now - stats.lastTime) / 1000;
+    const speed = bytesSentSinceLast / timeSinceLast; // bytes per sec
+    
+    const etaSecs = (total - current) / speed;
+    const speedStr = `${formatSize(speed)}/s`;
     const etaStr = isFinite(etaSecs) && etaSecs > 0 ? ` · ${formatTime(etaSecs)} remaining` : "";
-    document.getElementById(`tfs-${id}`).textContent = `${formatSize(current)} / ${formatSize(total)}${etaStr}`;
+    
+    document.getElementById(`tfs-${id}`).textContent = `${formatSize(current)} / ${formatSize(total)} (${speedStr})${etaStr}`;
+    
     stats.lastBytes = current;
     stats.lastTime = now;
   }
@@ -801,8 +1340,23 @@ function finishTransferUI(id, blob, name) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   TEXT & SCREEN
-══════════════════════════════════════════════════════════════════════ */
+   TEXT / MESSAGE SHARING & ESCAPING
+   ══════════════════════════════════════════════════════════════════════ */
+function formatTextMessage(content) {
+  const escape = (str) => str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  
+  // Format multiline code blocks enclosed in ```
+  if (content.startsWith("```") && content.endsWith("```")) {
+    const code = content.slice(3, -3).trim();
+    return `<pre style="background: rgba(0,0,0,0.15); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 0.9rem; overflow-x: auto; margin-top: 8px; border: 1px solid var(--border);">${escape(code)}</pre>`;
+  }
+  
+  // Format standard urls to clickable links
+  const escaped = escape(content);
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return escaped.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600; text-decoration: underline; word-break: break-all;">${url}</a>`);
+}
+
 function sendText() {
   const val = document.getElementById("text-input").value.trim();
   if (!val || !STATE.connected) return;
@@ -815,30 +1369,45 @@ function renderReceivedText(content, isMe = false) {
   const el = document.createElement("div");
   el.className = "received-bubble";
   if (isMe) el.style.background = "var(--border)";
-  const safeContent = content.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  
   el.innerHTML = `
     <div class="bubble-meta">
-      ${isMe ? "You" : STATE.peerDeviceName} · ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-      <button class="bubble-copy" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent); toast('Copied')">Copy</button>
+      <span>${isMe ? "You" : STATE.peerDeviceName} · ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+      <button class="bubble-copy" onclick="copyMessageText(this)">Copy</button>
     </div>
-    <div>${safeContent}</div>
+    <div class="bubble-text-content" style="white-space: pre-wrap; word-break: break-word;">${formatTextMessage(content)}</div>
   `;
   document.getElementById("received-texts").prepend(el);
 }
 
+function copyMessageText(btn) {
+  const bubble = btn.closest('.received-bubble');
+  const textEl = bubble.querySelector('.bubble-text-content');
+  const textToCopy = textEl ? textEl.textContent : '';
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    toast('Copied to clipboard');
+  }).catch(() => {
+    toast('Copy failed');
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SCREEN & CAMERA SHARE MEDIA CONTROLS
+   ══════════════════════════════════════════════════════════════════════ */
 let sharingScreen = false;
 async function toggleScreenShare() {
   if (!STATE.connected) return;
   const btn = document.getElementById("share-screen-btn");
   if (!sharingScreen) {
     try {
-      const stream = IS_MOBILE 
-        ? await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true })
-        : await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       STATE.screenStream = stream;
-      document.getElementById("screen-video").srcObject = stream;
-      document.getElementById("screen-video").style.display = "block";
+      
+      const vid = document.getElementById("screen-video");
+      vid.srcObject = stream;
+      vid.style.display = "block";
       document.getElementById("screen-placeholder").style.display = "none";
+      vid.parentElement.querySelector(".fullscreen-overlay-btn").style.display = "block";
 
       stream.getTracks().forEach(t => STATE.screenSender = STATE.pc.addTrack(t, stream));
       const offer = await STATE.pc.createOffer();
@@ -846,27 +1415,181 @@ async function toggleScreenShare() {
       sendSignal({ type: "offer", sdp: offer.sdp });
 
       sharingScreen = true;
-      btn.textContent = IS_MOBILE ? "Stop Camera" : "Stop Sharing";
+      btn.textContent = "Stop Sharing Screen";
       btn.className = "btn btn-danger";
+      
+      requestWakeLock();
       stream.getVideoTracks()[0].onended = stopScreenShare;
-    } catch { toast("Screen share cancelled"); }
-  } else { stopScreenShare(); }
+    } catch { 
+      toast("Screen sharing cancelled"); 
+    }
+  } else { 
+    stopScreenShare(); 
+  }
 }
 
 function stopScreenShare() {
   if (STATE.screenStream) STATE.screenStream.getTracks().forEach(t => t.stop());
   if (STATE.screenSender) STATE.pc.removeTrack(STATE.screenSender);
-  document.getElementById("screen-video").style.display = "none";
+  
+  const vid = document.getElementById("screen-video");
+  vid.style.display = "none";
   document.getElementById("screen-placeholder").style.display = "block";
+  vid.parentElement.querySelector(".fullscreen-overlay-btn").style.display = "none";
+
   sharingScreen = false;
   const btn = document.getElementById("share-screen-btn");
-  btn.textContent = IS_MOBILE ? "Share Camera" : "Share My Screen";
+  btn.textContent = "Share My Screen";
   btn.className = "btn btn-primary";
+  
+  releaseWakeLock();
+}
+
+let sharingCamera = false;
+async function toggleCameraShare() {
+  if (!STATE.connected) return;
+  const btn = document.getElementById("share-camera-btn");
+  if (!sharingCamera) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+      STATE.cameraStream = stream;
+
+      const vid = document.getElementById("camera-video");
+      vid.srcObject = stream;
+      vid.style.display = "block";
+      document.getElementById("camera-placeholder").style.display = "none";
+      vid.parentElement.querySelector(".fullscreen-overlay-btn").style.display = "block";
+
+      stream.getTracks().forEach(t => STATE.cameraSender = STATE.pc.addTrack(t, stream));
+      const offer = await STATE.pc.createOffer();
+      await STATE.pc.setLocalDescription(offer);
+      sendSignal({ type: "offer", sdp: offer.sdp });
+
+      sharingCamera = true;
+      btn.textContent = "Stop Sharing Camera";
+      btn.className = "btn btn-danger";
+
+      requestWakeLock();
+      stream.getVideoTracks()[0].onended = stopCameraShare;
+    } catch (err) {
+      toast("Camera sharing cancelled or denied");
+    }
+  } else {
+    stopCameraShare();
+  }
+}
+
+function stopCameraShare() {
+  if (STATE.cameraStream) STATE.cameraStream.getTracks().forEach(t => t.stop());
+  if (STATE.cameraSender) STATE.pc.removeTrack(STATE.cameraSender);
+
+  const vid = document.getElementById("camera-video");
+  vid.style.display = "none";
+  document.getElementById("camera-placeholder").style.display = "block";
+  vid.parentElement.querySelector(".fullscreen-overlay-btn").style.display = "none";
+
+  sharingCamera = false;
+  const btn = document.getElementById("share-camera-btn");
+  btn.textContent = "Share My Camera";
+  btn.className = "btn btn-primary";
+
+  releaseWakeLock();
+}
+
+function enterFullscreen(id) {
+  const vid = document.getElementById(id);
+  if (!vid || vid.style.display === "none") return;
+  
+  if (vid.requestFullscreen) {
+    vid.requestFullscreen();
+  } else if (vid.webkitRequestFullscreen) {
+    vid.webkitRequestFullscreen();
+  } else if (vid.msRequestFullscreen) {
+    vid.msRequestFullscreen();
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   ADVANCED & CONFIG
-══════════════════════════════════════════════════════════════════════ */
+   QR CODE & LOCAL LAN URL FALLBACKS
+   ══════════════════════════════════════════════════════════════════════ */
+function getBaseUrl() {
+  // 1. User manual override
+  const customOverride = localStorage.getItem("peerdrop_custom_base_url");
+  if (customOverride && customOverride.trim()) {
+    return customOverride.trim();
+  }
+
+  // 2. Current page domain (if not local host/ip)
+  const host = window.location.hostname;
+  if (host !== "localhost" && host !== "127.0.0.1" && window.location.protocol !== "file:") {
+    return window.location.origin + window.location.pathname;
+  }
+
+  // 3. Extracted WebRTC ICE candidate local IP
+  if (localIpExtracted) {
+    const port = window.location.port ? `:${window.location.port}` : ':3000';
+    return `http://${localIpExtracted}${port}${window.location.pathname}`;
+  }
+
+  // 4. Default fallback to window location
+  return window.location.origin + window.location.pathname;
+}
+
+function updateQrCode() {
+  if (!STATE.roomCode) return;
+  let baseUrl = getBaseUrl();
+  if (baseUrl.startsWith("file://")) {
+    baseUrl = "http://192.168.1.50:3000"; // fallback
+  }
+
+  const url = new URL(baseUrl);
+  url.searchParams.set("room", STATE.roomCode);
+  
+  document.getElementById("qr-code-img").src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url.toString());
+  document.getElementById("qr-container").style.display = "block";
+}
+
+function copyRoomCode() {
+  if (!STATE.roomCode) return;
+  navigator.clipboard.writeText(STATE.roomCode).then(() => {
+    toast("Room code copied!");
+  }).catch(() => {
+    toast("Copy failed");
+  });
+}
+
+function shareRoomLink() {
+  if (!STATE.roomCode) return;
+  const baseUrl = getBaseUrl();
+  const url = new URL(baseUrl);
+  url.searchParams.set("room", STATE.roomCode);
+  const shareUrl = url.toString();
+
+  if (navigator.share) {
+    navigator.share({
+      title: 'PeerDrop Sharing Room',
+      text: `Connect to share files: Code ${STATE.roomCode}`,
+      url: shareUrl
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast("Sharing link copied to clipboard!");
+    }).catch(() => {
+      toast("Copy failed");
+    });
+  }
+}
+
+function applyCustomBaseUrl() {
+  const val = document.getElementById("custom-base-url").value.trim();
+  if (val) localStorage.setItem("peerdrop_custom_base_url", /^https?:\/\//i.test(val) ? val : "http://" + val);
+  updateQrCode();
+  toast("QR Code base URL updated!");
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SETTINGS & CONFIGS
+   ══════════════════════════════════════════════════════════════════════ */
 function openAdvancedModal() {
   openModal("modal-advanced");
   document.getElementById("turn-url-input").value = localStorage.getItem("peerdrop_turn_url") || "";
@@ -896,23 +1619,10 @@ function isLocalOrigin() {
   return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:";
 }
 
-function updateQrCode() {
-  if (!STATE.roomCode) return;
-  let baseUrl = localStorage.getItem("peerdrop_custom_base_url") || window.location.origin + window.location.pathname;
-  if (baseUrl === "null" || baseUrl.startsWith("file://")) baseUrl = "http://192.168.1.50:3000";
-  const url = new URL(baseUrl);
-  url.searchParams.set("room", STATE.roomCode);
-  document.getElementById("qr-code-img").src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url.toString());
-  document.getElementById("qr-container").style.display = "block";
+// Register service worker for offline installation (PWA)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
 }
-
-function applyCustomBaseUrl() {
-  const val = document.getElementById("custom-base-url").value.trim();
-  if (val) localStorage.setItem("peerdrop_custom_base_url", /^https?:\/\//i.test(val) ? val : "http://" + val);
-  updateQrCode();
-}
-
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
 </body>
 </html>
