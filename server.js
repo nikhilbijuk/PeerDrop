@@ -86,35 +86,54 @@ function broadcast(room, senderId, data) {
   }
 }
 
+// Check if an IP address is a private local network/loopback IP
+function isPrivateIp(ip) {
+  if (!ip) return false;
+  const clean = ip.replace(/^::ffff:/, "");
+  if (clean === "127.0.0.1" || clean === "::1" || clean === "localhost") return true;
+  if (/^(?:10|192\.168)\./.test(clean)) return true;
+  if (/^172\.(?:1[6-9]|2\d|3[01])\./.test(clean)) return true;
+  if (clean.startsWith("fe80:") || clean.startsWith("fc00:") || clean.startsWith("fd00:")) return true;
+  return false;
+}
+
 // Group by IP helper
-function getNearbyDevices(ip) {
+function getNearbyDevices(ip, ws) {
   const list = [];
+  const isClientPrivate = isPrivateIp(ip);
+  
   for (const client of wss.clients) {
     if (
       client.readyState === WebSocket.OPEN &&
-      client.ip === ip &&
       !client.roomCode &&
-      client.peerId
+      client.peerId &&
+      client !== ws
     ) {
-      list.push({
-        peerId: client.peerId,
-        name: client.deviceName || "Unknown Device"
-      });
+      const isOtherPrivate = isPrivateIp(client.ip);
+      // Group together if:
+      // 1. Both are private LAN IPs (running local server)
+      // 2. Both are public WAN IPs AND have the exact same NAT IP
+      if ((isClientPrivate && isOtherPrivate) || (!isClientPrivate && client.ip === ip)) {
+        list.push({
+          peerId: client.peerId,
+          name: client.deviceName || "Unknown Device"
+        });
+      }
     }
   }
   return list;
 }
 
 function sendNearbyDevices(ip) {
-  const devices = getNearbyDevices(ip);
+  const isClientPrivate = isPrivateIp(ip);
   for (const client of wss.clients) {
-    if (
-      client.readyState === WebSocket.OPEN &&
-      client.ip === ip &&
-      !client.roomCode
-    ) {
-      const filtered = devices.filter(d => d.peerId !== client.peerId);
-      send(client, { type: "nearby-devices", devices: filtered });
+    if (client.readyState === WebSocket.OPEN && !client.roomCode) {
+      const isOtherPrivate = isPrivateIp(client.ip);
+      const isMatch = (isClientPrivate && isOtherPrivate) || (!isClientPrivate && client.ip === ip);
+      if (isMatch) {
+        const list = getNearbyDevices(client.ip, client);
+        send(client, { type: "nearby-devices", devices: list });
+      }
     }
   }
 }
@@ -184,7 +203,8 @@ wss.on("connection", (ws, req) => {
         break;
       }
 
-      // ── Join an existing room ──────────────────────────────────────────
+      // ── Join or Accept invitation to an existing room ──────────────────
+      case "accept":
       case "join": {
         const code = (msg.roomCode || "").toUpperCase().trim();
         if (!rooms.has(code)) {

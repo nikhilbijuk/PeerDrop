@@ -563,7 +563,11 @@ const STATE = {
   incomingFileMeta: null,
   heartbeatInterval: null,
   statsInterval: null,
-  wakeLock: null
+  wakeLock: null,
+  // File transfer buffer states (globalized to solve scope access issues)
+  recvMeta: null,
+  recvBufs: [],
+  recvBytes: 0
 };
 
 // Client-side Local IP Discovery State
@@ -1055,8 +1059,6 @@ function wireDataChannel() {
   const dc = STATE.dataChannel;
   dc.binaryType = "arraybuffer";
 
-  let recvMeta = null, recvBufs = [], recvBytes = 0;
-
   dc.onopen = () => {
     dc.send(JSON.stringify({ type: "hello", name: MY_DEVICE_NAME }));
   };
@@ -1091,14 +1093,15 @@ function wireDataChannel() {
       }
     } else {
       // Chunk binary payload arriving
-      recvBufs.push(e.data);
-      recvBytes += e.data.byteLength;
-      updateTransferUI(recvMeta.id, recvMeta.size, recvBytes);
+      if (!STATE.recvMeta) return;
+      STATE.recvBufs.push(e.data);
+      STATE.recvBytes += e.data.byteLength;
+      updateTransferUI(STATE.recvMeta.id, STATE.recvMeta.size, STATE.recvBytes);
       
-      if (recvBytes >= recvMeta.size) {
-        const blob = new Blob(recvBufs, { type: recvMeta.mime });
-        finishTransferUI(recvMeta.id, blob, recvMeta.name);
-        recvMeta = null; recvBufs = []; recvBytes = 0;
+      if (STATE.recvBytes >= STATE.recvMeta.size) {
+        const blob = new Blob(STATE.recvBufs, { type: STATE.recvMeta.mime });
+        finishTransferUI(STATE.recvMeta.id, blob, STATE.recvMeta.name);
+        STATE.recvMeta = null; STATE.recvBufs = []; STATE.recvBytes = 0;
         releaseWakeLock();
       }
     }
@@ -1112,17 +1115,41 @@ async function updateConnectionStats() {
     const stats = await STATE.pc.getStats();
     let activePair = null;
     
+    // Find selected candidate pair from the transport report
+    let selectedPairId = null;
     stats.forEach(report => {
-      if (report.type === "candidate-pair" && (report.nominated || report.state === "in-progress" || report.bytesSent > 0)) {
-        if (!activePair || report.bytesSent > activePair.bytesSent) {
-          activePair = report;
-        }
+      if (report.type === "transport" && report.selectedCandidatePairId) {
+        selectedPairId = report.selectedCandidatePairId;
       }
     });
+
+    if (selectedPairId) {
+      activePair = stats.get(selectedPairId);
+    }
+
+    if (!activePair) {
+      // Nominated succeeded pair fallback
+      stats.forEach(report => {
+        if (report.type === "candidate-pair" && report.nominated && report.state === "succeeded") {
+          activePair = report;
+        }
+      });
+    }
 
     if (activePair) {
       const localCand = stats.get(activePair.localCandidateId);
       const remoteCand = stats.get(activePair.remoteCandidateId);
+
+      // Helper to check for private LAN IPs
+      const isLocalNetworkIp = (ip) => {
+        if (!ip) return false;
+        const clean = ip.replace(/^::ffff:/, "");
+        if (clean === "127.0.0.1" || clean === "::1" || clean === "localhost") return true;
+        if (/^(?:10|192\.168)\./.test(clean)) return true;
+        if (/^172\.(?:1[6-9]|2\d|3[01])\./.test(clean)) return true;
+        if (clean.startsWith("fe80:") || clean.startsWith("fc00:") || clean.startsWith("fd00:")) return true;
+        return false;
+      };
 
       // Determine Connection Type
       if (localCand && remoteCand) {
@@ -1137,7 +1164,7 @@ async function updateConnectionStats() {
           badgeText = "🔄 Relay Connection";
           badgeClass = "badge-relay";
           tooltip = "Routing traffic through TURN fallback server.";
-        } else if (localType === "host" && remoteType === "host") {
+        } else if ((localType === "host" && remoteType === "host") || (isLocalNetworkIp(localCand.ip) && isLocalNetworkIp(remoteCand.ip))) {
           badgeText = "🟢 Local Network";
           badgeClass = "badge-local";
           tooltip = "Direct P2P local Wi-Fi transfer. Data stays on your LAN.";
@@ -1282,9 +1309,9 @@ function acceptFileRequest() {
   if (!meta) return;
 
   // Setup buffer objects
-  recvMeta = meta;
-  recvBufs = [];
-  recvBytes = 0;
+  STATE.recvMeta = meta;
+  STATE.recvBufs = [];
+  STATE.recvBytes = 0;
 
   STATE.transferStats[meta.id] = { start: Date.now(), lastBytes: 0, lastTime: Date.now() };
   addTransferUI(meta.name, meta.size, "receive", meta.id);
